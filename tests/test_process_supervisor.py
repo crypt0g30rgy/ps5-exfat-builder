@@ -4,9 +4,10 @@ Run from the repo root:
 
     python -m unittest discover -s tests -v
 
-These tests are POSIX-oriented because the development host is Linux; the
-Windows path (taskkill /T /F) shares the same state machine and is covered
-by the manual validation matrix in the release notes.
+The process-tree and inherited-pipe tests require a POSIX shell
+(``/bin/sh``), so they are skipped on Windows. The Windows path
+(``taskkill /T /F``) shares the same state machine and is covered by the
+manual validation matrix in the release notes.
 """
 
 from __future__ import annotations
@@ -119,6 +120,8 @@ class TestRunProcess(unittest.TestCase):
         self.assertTrue(result.cancelled)
         self.assertIsNone(result.returncode)
 
+    @unittest.skipUnless(os.name == 'posix',
+                         'requires /bin/sh and POSIX process groups')
     def test_cancel_kills_grandchild_tree(self):
         with tempfile.TemporaryDirectory() as td:
             pidfile = os.path.join(td, 'pid')
@@ -227,6 +230,8 @@ class TestRunProcess(unittest.TestCase):
         self.assertEqual(len(warnings), 1)
         self.assertTrue(result.warning_fired)
 
+    @unittest.skipUnless(os.name == 'posix',
+                         'requires /bin/sh and POSIX inherited pipes')
     def test_parent_exit_with_inherited_pipe_does_not_hang(self):
         """The original bug: shell exits but sleep still owns stdout."""
         with tempfile.TemporaryDirectory() as td:

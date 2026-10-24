@@ -1,10 +1,11 @@
 name: Build and Release
 
 on:
+  # Build on main and release tags only. Pull requests are validated
+  # locally; they must not consume a Windows build runner.
   push:
     branches: [main]
     tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:

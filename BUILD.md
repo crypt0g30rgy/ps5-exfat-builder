@@ -99,7 +99,9 @@ python -m unittest discover -s tests -v
 The suite is pure Python (no Tk window is created) and covers naming,
 embedded payloads, process supervision, hardware detection, responsive
 scaling, robocopy summary parsing, queue size overrides, and windowed
-stdio hardening.
+stdio hardening. The two process-tree tests that spawn `/bin/sh` are
+skipped on Windows; the Windows `taskkill /T /F` path is covered by the
+manual validation matrix.
 
 ---
 
@@ -238,10 +240,12 @@ Workflow: `.github/workflows/build-release.yml`.
 
 | Event | What happens |
 | --- | --- |
-| Pull request | Installs dependencies, runs tests, builds the exe, uploads an artifact. No release. |
-| Push to `main` | Same build and artifact upload. No release. |
+| Push to `main` | Installs dependencies, runs tests, builds the exe, and uploads an artifact. No release. |
 | Push a tag matching `v*` | Builds, verifies the tag matches `APP_VERSION`, then publishes a GitHub Release with the exe and checksum. |
 | Manual `workflow_dispatch` | Builds and uploads the artifact only. |
+
+Pull requests do **not** trigger the workflow, so they cannot consume a
+Windows build runner. Run the test suite locally before merging.
 
 The build job runs on `windows-latest` with Python 3.11 x64. Artifacts are
 named `exfat-image-builder-windows-x64` and kept for 30 days.
