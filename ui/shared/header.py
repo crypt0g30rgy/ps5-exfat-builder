@@ -41,7 +41,7 @@ class AppHeader(tk.Frame):
     """
 
     def __init__(self, parent, title="", version="", subtitle="",
-                 icon="\U0001f3ae", **kwargs):
+                 icon="\u25c9", **kwargs):
         super().__init__(parent, bg=get_color("bg_2"),
                          highlightthickness=0, bd=0, **kwargs)
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     hdr = AppHeader(root, title="exFAT Image Builder", version="3.3.0",
                     subtitle="Build PS5 exFAT game images — auto-detected")
     hdr.pack(fill="x")
-    tk.Label(hdr.actions, text="\u2699", bg=COLORS["bg_2"],
+    tk.Label(hdr.actions, text="\u25ab", bg=COLORS["bg_2"],
              fg=COLORS["fg_3"], font=FONTS["h3"]).pack(side="right",
                                                        padx=6)
 

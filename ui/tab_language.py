@@ -7,16 +7,16 @@ Layout:
 
     ┌─ left pane (320px) ─────┬─ right pane ─────────────────────────┐
     │ Interface language      │ ┌─ head (lang + actions) ──────────┐ │
-    │ 17 languages · 16 done  │ │ 🇬🇧 English (UK) · 1,847 strings  │ │
+    │ 17 languages · 16 done  │ │ English (UK) · 1,847 strings  │ │
     │ ┌─ search ─────────────┐│ │ [Import] [Export] [Apply]        │ │
-    │ │ 🔍 search…           ││ ├─ body (preview + status aside) ──┤ │
+    │ │ ⌕ search…           ││ ├─ body (preview + status aside) ──┤ │
     │ └────────────────────┘ │ │ ┌─ live preview ─┐ ┌─ status ──┐  │ │
     │ ┌─ list ─────────────┐ │ │ │ Build exFAT    │ │Coverage   │  │ │
-    │ │ ▌🇬🇧 English (UK)  │ │ │ │ … translated   │ │Last upd   │  │ │
-    │ │  🇺🇸 English (US)  │ │ │ │ ┌─ strings ──┐ │ │Contributor│  │ │
-    │ │  🇫🇷 Français       │ │ │ │ │ key→value   │ │ │           │  │ │
-    │ │  🇩🇪 Deutsch        │ │ │ │ └────────────┘ │ │           │  │ │
-    │ │  🇪🇸 Español       │ │ │ └────────────────┘ └───────────┘  │ │
+    │ │ ▌English (UK)  │ │ │ │ … translated   │ │Last upd   │  │ │
+    │ │  English (US)  │ │ │ │ ┌─ strings ──┐ │ │Contributor│  │ │
+    │ │  Français       │ │ │ │ │ key→value   │ │ │           │  │ │
+    │ │  Deutsch        │ │ │ │ └────────────┘ │ │           │  │ │
+    │ │  Español       │ │ │ └────────────────┘ └───────────┘  │ │
     │ │  ...               │ │ │                                    │ │
     │ │ ▌█████ 100%        │ │ │                                    │ │
     │ │ ▌███▄  88% (amber) │ │ │                                    │ │
@@ -48,24 +48,24 @@ from ui.shared.scroll import attach_scroll
 # Master list of supported language codes with native + English name.
 # Order roughly mirrors the mock and the existing tab.
 _LANGS = [
-    ('en',    'English (UK)',         'English',       '\U0001f1ec\U0001f1e7'),  # 🇬🇧
-    ('en_us', 'English (US)',         'English',       '\U0001f1fa\U0001f1f8'),  # 🇺🇸
-    ('fr',    'French',               'Français',      '\U0001f1eb\U0001f1f7'),
-    ('de',    'German',               'Deutsch',       '\U0001f1e9\U0001f1ea'),
-    ('es',    'Spanish',              'Español',       '\U0001f1ea\U0001f1f8'),
-    ('it',    'Italian',              'Italiano',      '\U0001f1ee\U0001f1f9'),
-    ('pt',    'Portuguese',           'Português',     '\U0001f1f5\U0001f1f9'),
-    ('nl',    'Dutch',                'Nederlands',    '\U0001f1f3\U0001f1f1'),
-    ('pl',    'Polish',               'Polski',        '\U0001f1f5\U0001f1f1'),
-    ('ru',    'Russian',              'Русский',       '\U0001f1f7\U0001f1fa'),
-    ('tr',    'Turkish',              'Türkçe',        '\U0001f1f9\U0001f1f7'),
-    ('ja',    'Japanese',             '日本語',         '\U0001f1ef\U0001f1f5'),
-    ('zh',    'Chinese (Simplified)', '简体中文',       '\U0001f1e8\U0001f1f3'),
-    ('ko',    'Korean',               '한국어',         '\U0001f1f0\U0001f1f7'),
-    ('ar',    'Arabic',               'العربية',        '\U0001f1f8\U0001f1e6'),
-    ('th',    'Thai',                 'ภาษาไทย',        '\U0001f1f9\U0001f1ed'),
-    ('vi',    'Vietnamese',           'Tiếng Việt',    '\U0001f1fb\U0001f1f3'),
-    ('id',    'Indonesian',           'Bahasa Indonesia', '\U0001f1ee\U0001f1e9'),
+    ('en',    'English (UK)',         'English',       ''),
+    ('en_us', 'English (US)',         'English',       ''),
+    ('fr',    'French',               'Français',      ''),
+    ('de',    'German',               'Deutsch',       ''),
+    ('es',    'Spanish',              'Español',       ''),
+    ('it',    'Italian',              'Italiano',      ''),
+    ('pt',    'Portuguese',           'Português',     ''),
+    ('nl',    'Dutch',                'Nederlands',    ''),
+    ('pl',    'Polish',               'Polski',        ''),
+    ('ru',    'Russian',              'Русский',       ''),
+    ('tr',    'Turkish',              'Türkçe',        ''),
+    ('ja',    'Japanese',             '日本語',         ''),
+    ('zh',    'Chinese (Simplified)', '简体中文',       ''),
+    ('ko',    'Korean',               '한국어',         ''),
+    ('ar',    'Arabic',               'العربية',        ''),
+    ('th',    'Thai',                 'ภาษาไทย',        ''),
+    ('vi',    'Vietnamese',           'Tiếng Việt',    ''),
+    ('id',    'Indonesian',           'Bahasa Indonesia', ''),
 ]
 
 
@@ -137,7 +137,7 @@ def _build_left_pane(parent, app):
                            highlightbackground=COLORS['border_3'],
                            highlightthickness=1)
     search_wrap.pack(fill='x', padx=18, pady=(0, 10))
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_3'], fg=COLORS['fg_5']
              ).pack(side='left', padx=(8, 4))
@@ -222,7 +222,7 @@ def _render_lang_row(parent, app, code, name, native, flag, is_active):
 
     name_row = tk.Frame(text_col, bg=row_bg)
     name_row.pack(fill='x')
-    tk.Label(name_row, text=flag,
+    tk.Label(name_row, text=code.upper()[:2],
              font=(FONTS['body'][0], 12),
              bg=row_bg, fg=COLORS['fg_0']
              ).pack(side='left', padx=(0, 8))
@@ -317,13 +317,14 @@ def _refresh_preview_pane(app):
     # NOTE: don't unpack the first element into `_` — that name is the
     # i18n translation function from exfat_builder, and rebinding it here
     # breaks every later `_('...')` call in this function.
-    _ignored_code, name, native, flag = info
+    _ignored_code, name, native, _flag = info
 
     # ── Head ──
     for w in app._lang_right_head_frame.winfo_children():
         w.destroy()
 
-    flag_lbl = tk.Label(app._lang_right_head_frame, text=flag,
+    flag_lbl = tk.Label(app._lang_right_head_frame,
+                        text=_ignored_code.upper()[:2],
                         font=(FONTS['body'][0], 26),
                         bg=COLORS['bg_1'], fg=COLORS['fg_0'])
     flag_lbl.pack(side='left', padx=(0, 14))

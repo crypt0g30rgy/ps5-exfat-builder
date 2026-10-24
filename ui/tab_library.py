@@ -6,11 +6,11 @@ Step 5 (v2.0.7): refactored against preview/library-tab-redesign.html.
 Layout (top to bottom):
 
     [Game Library]  [47 games · 3 folders]    [+ Add folder] [↻ Scan]
-                                               [⚡ Backport All] [🔨 Build All]
+                                               [◈ Backport All] [▦ Build All]
     ─────────────────────────────────────────────────────────────────
-    [🔍 Filter…]  [⚏ Grid] [☰ List]                            [Status]
+    [⌕ Filter…]  [⚏ Grid] [≡ List]                            [Status]
     ─────────────────────────────────────────────────────────────────
-    [📁 D:/PS5/Dumps  28 games  ✕]  [📁 E:/Backports  ...]  ←── chip strip
+    [▤ D:/PS5/Dumps  28 games  ✕]  [▤ E:/Backports  ...]  ←── chip strip
     ─────────────────────────────────────────────────────────────────
     [● Scanning  ▰▰▰▰▰▰▰▱▱▱  29/47  elapsed 00:14]   ← scan bar (when running)
     ─────────────────────────────────────────────────────────────────
@@ -108,10 +108,10 @@ def _build_page_head(body, app):
     _badge(app._lib_stat_folders_var, _('folders'))
 
     # Right-aligned actions
-    _btn(head, '\U0001f528  Build All',
+    _btn(head, '▦  Build All',
          command=app._lib_build_all, kind='success'
          ).pack(side='right')
-    _btn(head, '\u26a1  Backport All',
+    _btn(head, '◈  Backport All',
          command=app._lib_backport_all, kind='purple'
          ).pack(side='right', padx=(0, 6))
     _btn(head, '\u21bb  Scan Folders',
@@ -138,7 +138,7 @@ def _build_toolbar(body, app):
                            highlightbackground=COLORS['border_3'],
                            highlightthickness=1)
     search_wrap.pack(side='left', fill='x', expand=True)
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['field_bg'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(10, 6))
@@ -179,7 +179,7 @@ def _build_toolbar(body, app):
         return btn, _click
 
     app._lib_grid_btn, _grid_click = _make_seg_btn('\u22ee\u22ee  Grid', 'grid')
-    app._lib_list_btn, _list_click = _make_seg_btn('\u2630  List', 'list')
+    app._lib_list_btn, _list_click = _make_seg_btn('≡  List', 'list')
     # Default: Grid is active
     app._lib_grid_btn.configure(bg=COLORS['bg_3'], fg=COLORS['fg_0'])
 
@@ -289,9 +289,9 @@ def _build_footer_stats(body, app):
                  bg=COLORS['bg_0'], fg=COLORS['fg_0'], anchor='w'
                  ).pack(anchor='w')
 
-    _tile('\U0001f3ae', COLORS['accent'], app._lib_stat_games_var,
+    _tile('◉', COLORS['accent'], app._lib_stat_games_var,
           _('Games'))
-    _tile('\U0001f4c1', COLORS['warn'], app._lib_stat_folders_var,
+    _tile('▤', COLORS['warn'], app._lib_stat_folders_var,
           _('Folders'))
 
     _btn(inner, '\u21bb  ' + _('Rescan'),
@@ -340,7 +340,7 @@ def _btn(parent, text, command, kind='ghost'):
         'success': (COLORS['success'], COLORS['fg_0'],
                     COLORS['success_hi'], COLORS['fg_0']),
         'purple':  (COLORS['purple'],  COLORS['fg_0'],
-                    '#a567c1',          COLORS['fg_0']),
+                    '#2EA3FF',          COLORS['bg_0']),
         'ghost':   (COLORS['bg_2'],    COLORS['fg_2'],
                     COLORS['bg_3'],     COLORS['fg_0']),
     }

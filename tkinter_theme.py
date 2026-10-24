@@ -16,6 +16,7 @@ At the top of `exfat_builder.py`, after creating your root:
 
     root = tk.Tk()
     apply_theme(root)                 # <-- single call themes everything
+    install_responsive_scaling(root)  # type follows the window size
     root.configure(bg=COLORS["bg_1"])
     root.title("exFAT Image Builder")
 
@@ -53,83 +54,87 @@ import platform
 # COLOR TOKENS  (1:1 with colors_and_type.css)
 # ────────────────────────────────────────────────────────────────────
 COLORS = {
-    # Backgrounds — purple-tinted dark per v1-bundle/backports-tab.html
-    # (deepest is bg_0 = #0a0812; panels lighten through bg_5)
-    "bg_0":     "#0a0812",
-    "bg_1":     "#110d1c",
-    "bg_2":     "#16121f",
-    "bg_3":     "#1d1729",
-    "bg_4":     "#251e34",
-    "bg_5":     "#2d2540",
+    # ── Sony PS5-inspired neutral dark palette ───────────────────────
+    # Canonical values (the only hues used anywhere in the app):
+    #   #101216 bg · #171A21 secondary · #20242C elevated
+    #   #292F39 hover · #303640 borders
+    #   #0070D1 primary · #1685E5 secondary · #2EA3FF active
+    #   #F5F7FA text · #A7AFBA secondary text · #737D8A muted
+    #   #42C786 success · #F0B64A warning · #F16C75 error
+    #
+    # The extra tokens below (bg_5, border_4, fg_2/fg_5/fg_6 and the
+    # *_hi hover shades) are neutral/tonal steps between those canonical
+    # values. There is no purple, violet or magenta anywhere in this
+    # table — including the legacy `purple`/`teal` aliases, which now
+    # resolve inside the PlayStation blue family.
 
-    # Borders — slight purple tint
-    "border_1": "#1c1729",
-    "border_2": "#25203a",
-    "border_3": "#322a47",
-    "border_4": "#3a3252",
+    # Surfaces
+    "bg_0":     "#101216",   # deepest surface (app / terminal / logs)
+    "bg_1":     "#101216",   # page background
+    "bg_2":     "#171A21",   # secondary surface / cards
+    "bg_3":     "#20242C",   # elevated surface / panels
+    "bg_4":     "#292F39",   # controls, inputs, hover
+    "bg_5":     "#303640",   # strong hover / pressed control
 
-    # Foregrounds — warm-leaning grays for contrast against purple-bg
-    "fg_0":     "#f3f0fa",   # heading
-    "fg_1":     "#e0dcec",
-    "fg_2":     "#c5c0d2",
-    "fg_3":     "#9d97ad",
-    "fg_4":     "#7a7390",
-    "fg_5":     "#5d5775",
-    "fg_6":     "#423d57",
+    # Borders
+    "border_1": "#171A21",
+    "border_2": "#20242C",
+    "border_3": "#303640",
+    "border_4": "#3A414D",   # strong / focused outline
 
-    # Dark fields (Step 35 / v2.2.16): the app's text inputs are now
-    # dark — matches the rest of the theme and prevents white-bg
-    # entries from screaming against the dark UI. The previous light
-    # fields (field_bg=#f0eef5, field_fg=#000000) were a deliberate
-    # Windows-form-style choice; user feedback rejected that.
-    "field_bg": "#251e34",
-    "field_fg": "#e0dcec",
-    "field_select_bg": "#b07ad6",
-    "field_select_fg": "#ffffff",
+    # Foregrounds
+    "fg_0":     "#F5F7FA",   # primary text
+    "fg_1":     "#F5F7FA",
+    "fg_2":     "#D6DCE4",
+    "fg_3":     "#A7AFBA",   # secondary text
+    "fg_4":     "#737D8A",   # muted text
+    "fg_5":     "#5C6672",
+    "fg_6":     "#464E59",   # disabled
 
-    # Accent — purple is now the global accent (was electric blue).
-    # The CSS mock used `--purple` as the primary action color.
-    "accent":     "#b07ad6",
-    "accent_hi":  "#c993e8",
-    "accent_lo":  "#2a1a3d",
-    "accent_08":  "#1a0d2a",   # opaque equivalent of purple @ 8% over bg_1
-    "accent_15":  "#241540",
-    "accent_pressed": "#8e60b8",
+    # Inputs — dark fields, never white
+    "field_bg": "#20242C",
+    "field_fg": "#F5F7FA",
+    "field_select_bg": "#0070D1",
+    "field_select_fg": "#F5F7FA",
 
-    # Status — adjusted for the purple-tint background
-    # (greens/ambers/reds shifted slightly cooler so they harmonize)
-    "success":    "#4ec9a4",
-    "success_hi": "#6fdcb8",
-    "success_bg": "#0f2418",
-    "success_ok": "#00ff41",   # terminal phosphor green — klog only;
-                                # intentionally retina-burning since
-                                # klog is meant to evoke a CRT terminal
+    # Accent — PlayStation blue
+    "accent":         "#0070D1",
+    "accent_hi":      "#2EA3FF",
+    "accent_lo":      "#0B2A47",
+    "accent_08":      "#13202E",   # opaque blue tint over bg_1
+    "accent_15":      "#14385C",   # selected row / stronger blue tint
+    "accent_pressed": "#0059A8",
 
-    "warn":       "#d6a85a",
-    "warn_hi":    "#e8c074",
-    "warn_bg":    "#241a08",
+    # Status
+    "success":    "#42C786",
+    "success_hi": "#6FDFA6",   # hover / text-on-dark step
+    "success_bg": "#12261C",
+    "success_ok": "#42C786",   # terminal log text (no neon green)
 
-    "danger":     "#d65a6a",
-    "danger_hi":  "#e87a8a",
-    "danger_bg":  "#240e14",
+    "warn":       "#F0B64A",
+    "warn_hi":    "#FFD27A",
+    "warn_bg":    "#2B2412",
 
-    "info_bg":    "#1a0d2a",
+    "danger":     "#F16C75",
+    "danger_hi":  "#FF939B",
+    "danger_bg":  "#2B1519",
+
+    "info_bg":    "#13202E",
 
     # Confidence dots (Dump Rename)
-    "conf_clean": "#4ec9a4",
-    "conf_guess": "#d6a85a",
-    "conf_fail":  "#d65a6a",
+    "conf_clean": "#42C786",
+    "conf_guess": "#F0B64A",
+    "conf_fail":  "#F16C75",
 
-    # Purple — same as accent now (kept as separate tokens for clarity
-    # when code semantically wants "this means backport" vs "this means
-    # primary action")
-    "purple":     "#b07ad6",
-    "purple_hi":  "#c993e8",
-    # Teal — kept distinct for ffpkg, shifted to harmonize with purple
-    "teal":       "#5ac9b8",
-    "teal_hi":    "#7adcca",
-    "teal_bg":    "#0e221f",
-    "teal_lo":    "#1f4a42",
+    # Legacy semantic aliases — kept so existing call sites keep working.
+    # They intentionally resolve to blue (never purple): `purple` is the
+    # secondary action blue, `teal` the active blue used for ffpkg flows.
+    "purple":     "#1685E5",
+    "purple_hi":  "#2EA3FF",
+    "teal":       "#2EA3FF",
+    "teal_hi":    "#63B8FF",
+    "teal_bg":    "#13202E",
+    "teal_lo":    "#1D3D5C",
 }
 
 # ────────────────────────────────────────────────────────────────────
@@ -137,45 +142,16 @@ COLORS = {
 # ────────────────────────────────────────────────────────────────────
 # tkinter takes (family, size, weight) tuples. Sizes here mirror the CSS
 # scale (px → tk pt; close enough on Windows where 1pt ≈ 1.33px).
-# Font choice: per the v1-bundle/backports-tab.html mock, the design uses
-# Inter (sans) and JetBrains Mono (mono). These are not bundled with
-# Windows by default, so the user needs to install them — but we list
-# Segoe UI / Consolas as fallback so tkinter renders something sensible
-# if Inter/JetBrains Mono aren't on the system.
 #
-# tkinter picks the FIRST family from a comma-separated list at the
-# Tk-level, NOT a CSS-style font-stack — so we pass the preferred name
-# and rely on tk's automatic substitution if the family is missing.
-# On Windows, font registration via tkinter.font.families() can confirm
-# whether the install worked.
-def _pick_font(preferred, fallback):
-    """Return preferred if it's installed, else fallback. Run at theme
-    apply time so we can probe the actual system font list."""
-    try:
-        from tkinter import font as _tkfont
-        # Build a temporary root only if no default exists; this is
-        # cheap and doesn't display anything.
-        try:
-            installed = set(_tkfont.families())
-        except Exception:
-            installed = set()
-        if preferred in installed:
-            return preferred
-    except Exception:
-        pass
-    return fallback
-
-
-# Set at module-load with platform-default fallbacks. apply_theme will
-# later re-resolve via _pick_font() to use Inter/JetBrains Mono if they're
-# actually installed.
-_SANS_FALLBACK = "Segoe UI" if platform.system() == "Windows" else (
+# Typography is deliberately single-family: Segoe UI for all UI text and
+# Consolas for monospace/terminal surfaces. Both ship with Windows, so the
+# app looks identical on every machine — no optional third-party fonts,
+# no font-stack probing at startup. Non-Windows fallbacks exist only so
+# the module remains importable for tests/tools.
+_SANS = "Segoe UI" if platform.system() == "Windows" else (
     ".AppleSystemUIFont" if platform.system() == "Darwin" else "Sans")
-_MONO_FALLBACK = "Consolas" if platform.system() == "Windows" else (
+_MONO = "Consolas" if platform.system() == "Windows" else (
     "Menlo" if platform.system() == "Darwin" else "DejaVu Sans Mono")
-
-_SANS = _SANS_FALLBACK
-_MONO = _MONO_FALLBACK
 
 FONTS = {
     "h1":      (_SANS, 22, "bold"),
@@ -198,27 +174,8 @@ FONTS = {
 # ────────────────────────────────────────────────────────────────────
 def apply_theme(root: tk.Tk) -> ttk.Style:
     """Apply the dark theme to `root`. Returns the ttk.Style for further tweaks."""
-    # ── Probe for Inter / JetBrains Mono now that we have a Tk root.
-    # If installed, replace the family in every FONTS entry so the
-    # design-system fonts are used; otherwise fall back to Segoe UI /
-    # Consolas (already in place from module load).
-    global _SANS, _MONO
-    try:
-        from tkinter import font as _tkfont
-        installed = set(_tkfont.families())
-        if "Inter" in installed:
-            _SANS = "Inter"
-        if "JetBrains Mono" in installed:
-            _MONO = "JetBrains Mono"
-        # Re-build FONTS with the resolved families
-        for key, val in list(FONTS.items()):
-            family, size, weight = val
-            new_family = _SANS if family == _SANS_FALLBACK else (
-                _MONO if family == _MONO_FALLBACK else family)
-            FONTS[key] = (new_family, size, weight)
-    except Exception:
-        pass
-
+    # Typography is fixed at module load (Segoe UI / Consolas on Windows).
+    # No font probing: the theme must render identically on every machine.
     C = COLORS
     F = FONTS
 
@@ -269,6 +226,12 @@ def apply_theme(root: tk.Tk) -> ttk.Style:
     root.option_add("*Canvas.background",       C["bg_1"])
     root.option_add("*Canvas.highlightThickness", 0)
 
+    # Dialogs / popovers: Toplevels and their plain tk children inherit the
+    # same surfaces as the main window so modal forms never flash a light
+    # background before their own colours are applied.
+    root.option_add("*Toplevel.background",      C["bg_1"])
+    root.option_add("*Toplevel*Label.font",      F["body"])
+
     # ── ttk base ──
     style.configure(".",
                     background=C["bg_1"],
@@ -298,31 +261,34 @@ def apply_theme(root: tk.Tk) -> ttk.Style:
                     borderwidth=1)
     style.configure("TLabelframe.Label",
                     background=C["bg_2"],
-                    foreground=C["accent"],
+                    foreground=C["fg_3"],
                     font=F["h3"])
     style.configure("Card.TLabelframe",
                     background=C["bg_2"],
                     bordercolor=C["border_3"],
                     borderwidth=1, relief="solid", padding=16)
     style.configure("Card.TLabelframe.Label",
-                    background=C["bg_2"], foreground=C["accent"], font=F["h3"])
+                    background=C["bg_2"], foreground=C["fg_3"], font=F["h3"])
 
     # ── TLabel variants ──
+    # Blue is reserved for actions and live state; headings are primary
+    # text, secondary copy is fg_3/fg_4. This keeps the interface reading
+    # like a console UI instead of a highlighter.
     style.configure("TLabel",        background=C["bg_1"], foreground=C["fg_1"], font=F["body"])
-    style.configure("H1.TLabel",     foreground=C["accent"], font=F["h1"])
+    style.configure("H1.TLabel",     foreground=C["fg_0"],   font=F["h1"])
     style.configure("H2.TLabel",     foreground=C["fg_0"],   font=F["h2"])
-    style.configure("H3.TLabel",     foreground=C["accent"], font=F["h3"])
-    style.configure("Eyebrow.TLabel", foreground=C["accent"], font=F["eyebrow"])
+    style.configure("H3.TLabel",     foreground=C["fg_0"],   font=F["h3"])
+    style.configure("Eyebrow.TLabel", foreground=C["fg_4"],  font=F["eyebrow"])
     style.configure("Body.TLabel",   foreground=C["fg_1"],   font=F["body"])
     style.configure("Muted.TLabel",  foreground=C["fg_4"],   font=F["body"])
     style.configure("Meta.TLabel",   foreground=C["fg_5"],   font=F["meta"])
-    style.configure("Mono.TLabel",   foreground=C["accent"], font=F["mono"], background=C["bg_4"])
-    style.configure("Accent.TLabel", foreground=C["accent"], font=F["body_b"])
+    style.configure("Mono.TLabel",   foreground=C["accent_hi"], font=F["mono"], background=C["bg_3"])
+    style.configure("Accent.TLabel", foreground=C["accent_hi"], font=F["body_b"])
     style.configure("Success.TLabel", foreground=C["success_hi"], font=F["body"])
     style.configure("Warn.TLabel",   foreground=C["warn_hi"], font=F["body"])
     style.configure("Danger.TLabel", foreground=C["danger_hi"], font=F["body"])
     style.configure("OnCard.TLabel", background=C["bg_2"], foreground=C["fg_1"])
-    style.configure("OnCard.H3.TLabel", background=C["bg_2"], foreground=C["accent"], font=F["h3"])
+    style.configure("OnCard.H3.TLabel", background=C["bg_2"], foreground=C["fg_0"], font=F["h3"])
     style.configure("OnCard.Muted.TLabel", background=C["bg_2"], foreground=C["fg_4"])
 
     # ── TButton — primary ──
@@ -368,33 +334,41 @@ def apply_theme(root: tk.Tk) -> ttk.Style:
               background=[("active", C["bg_3"]), ("pressed", C["bg_4"])],
               foreground=[("active", C["fg_1"])])
 
+    # Filled bright buttons use the darkest surface colour for their label:
+    # it is the highest-contrast option on amber/green/red and keeps the
+    # palette closed (no invented near-black text tones).
     style.configure("Warn.TButton",
-                    background=C["warn"], foreground="#1a0e00",
+                    background=C["warn"], foreground=C["bg_0"],
                     bordercolor=C["warn"], lightcolor=C["warn"], darkcolor=C["warn"],
                     padding=(14, 7), font=F["body_b"], relief="flat")
     style.map("Warn.TButton",
-              background=[("active", C["warn_hi"]), ("pressed", "#cc8800")])
+              background=[("active", C["warn_hi"]), ("pressed", C["warn"])],
+              foreground=[("disabled", C["fg_6"])])
 
     style.configure("Danger.TButton",
-                    background=C["danger"], foreground=C["fg_0"],
+                    background=C["danger"], foreground=C["bg_0"],
                     bordercolor=C["danger"], lightcolor=C["danger"], darkcolor=C["danger"],
                     padding=(14, 7), font=F["body_b"], relief="flat")
     style.map("Danger.TButton",
-              background=[("active", C["danger_hi"]), ("pressed", "#c62828")])
+              background=[("active", C["danger_hi"]), ("pressed", C["danger"])],
+              foreground=[("disabled", C["fg_6"])])
 
     style.configure("Success.TButton",
-                    background=C["success"], foreground=C["fg_0"],
+                    background=C["success"], foreground=C["bg_0"],
                     bordercolor=C["success"], lightcolor=C["success"], darkcolor=C["success"],
                     padding=(14, 7), font=F["body_b"], relief="flat")
     style.map("Success.TButton",
-              background=[("active", C["success_hi"]), ("pressed", "#388e3c")])
+              background=[("active", C["success_hi"]), ("pressed", C["success"])],
+              foreground=[("disabled", C["fg_6"])])
 
+    # Backports use the secondary PlayStation blue — never purple.
     style.configure("Backport.TButton",
                     background=C["purple"], foreground=C["fg_0"],
                     bordercolor=C["purple"], lightcolor=C["purple"], darkcolor=C["purple"],
                     padding=(14, 7), font=F["body_b"], relief="flat")
     style.map("Backport.TButton",
-              background=[("active", C["purple_hi"]), ("pressed", "#7d3c98")])
+              background=[("active", C["purple_hi"]), ("pressed", C["accent_pressed"])],
+              foreground=[("disabled", C["fg_6"])])
 
     # ── TCheckbutton / TRadiobutton ──
     style.configure("TCheckbutton",
@@ -464,7 +438,7 @@ def apply_theme(root: tk.Tk) -> ttk.Style:
                     padding=(16, 9), font=F["tab"])
     style.map("TNotebook.Tab",
               background=[("selected", C["bg_2"]), ("active", C["bg_3"])],
-              foreground=[("selected", C["accent"]), ("active", C["fg_1"])],
+              foreground=[("selected", C["accent_hi"]), ("active", C["fg_1"])],
               bordercolor=[("selected", C["accent"])],
               lightcolor=[("selected", C["accent"])])
     # Custom layout: thicker bottom border on selected tab (the blue underline)
@@ -543,6 +517,558 @@ def apply_theme(root: tk.Tk) -> ttk.Style:
 
 
 # ────────────────────────────────────────────────────────────────────
+# RESPONSIVE SCALING
+# ────────────────────────────────────────────────────────────────────
+# The layout is designed for a 780x760 client area. When the window is
+# resized the type scale follows it inside a deliberately narrow band:
+# ~90% at the minimum window size, ~125% when maximised. That keeps
+# text comfortable on a large monitor while ensuring fixed rows, sidebar
+# labels and toolbar buttons never lose their captions.
+#
+# Fonts reach widgets two ways, so both are covered:
+#   * ttk widgets inherit their font from a style; the style table is
+#     rewritten from the same FONTS tokens (still the single source of
+#     truth for the type scale).
+#   * plain tk widgets store explicit font tuples; the widget tree is
+#     walked and every font/wraplength is rescaled from the value it had
+#     before scaling (remembered on the widget), so repeated resizes can
+#     never compound the factor. The same pass scales explicit pixel
+#     width/height on tk.Frame containers (tiles, columns, rails) so a
+#     scaled caption cannot clip inside a container frozen at 100%.
+#
+# A <Map> hook rescales dialogs and lazily-built tabs created after a
+# resize as soon as they appear.
+
+_UI_SCALE_MIN   = 0.90
+_UI_SCALE_MAX   = 1.25
+_FONT_MIN_PT    = 7
+_MIN_SCALED_PX  = 16
+
+# Styles that pin a font in apply_theme(). Styles not listed here inherit
+# their font from "." and need no separate update.
+_STYLE_FONTS = {
+    ".":                     "body",
+    "TLabelframe.Label":     "h3",
+    "Card.TLabelframe.Label": "h3",
+    "TLabel":                "body",
+    "H1.TLabel":             "h1",
+    "H2.TLabel":             "h2",
+    "H3.TLabel":             "h3",
+    "Eyebrow.TLabel":        "eyebrow",
+    "Body.TLabel":           "body",
+    "Muted.TLabel":          "body",
+    "Meta.TLabel":           "meta",
+    "Mono.TLabel":           "mono",
+    "Accent.TLabel":         "body_b",
+    "Success.TLabel":        "body",
+    "Warn.TLabel":           "body",
+    "Danger.TLabel":         "body",
+    "OnCard.H3.TLabel":      "h3",
+    "TButton":               "button",
+    "Primary.TButton":       "button",
+    "Secondary.TButton":     "button",
+    "Ghost.TButton":         "button",
+    "Warn.TButton":          "body_b",
+    "Danger.TButton":        "body_b",
+    "Success.TButton":       "body_b",
+    "Backport.TButton":      "body_b",
+    "TCheckbutton":          "body",
+    "OnCard.TCheckbutton":   "body",
+    "TNotebook.Tab":         "tab",
+    "Treeview":              "body",
+    "Treeview.Heading":      "eyebrow",
+    # Page-local table styles (configured in ui/tab_files.py and
+    # ui/tab_ffpkg_edit.py) so their rows scale with their text too.
+    "FileMgr.Treeview":          "mono",
+    "FileMgr.Treeview.Heading":  "eyebrow",
+    "FfpkgEdit.Treeview":        "mono",
+    "FfpkgEdit.Treeview.Heading": "eyebrow",
+}
+
+# Padding that belongs to the type scale. Kept at the same values as
+# apply_theme() so a resize is the only thing that changes them.
+_STYLE_PADDING = {
+    "TButton":          (14, 7),
+    "Primary.TButton":  (16, 8),
+    "Secondary.TButton": (14, 7),
+    "Ghost.TButton":    (10, 6),
+    "Warn.TButton":     (14, 7),
+    "Danger.TButton":   (14, 7),
+    "Success.TButton":  (14, 7),
+    "Backport.TButton": (14, 7),
+    "TNotebook.Tab":    (16, 9),
+    "Treeview.Heading": (10, 7),
+    "TEntry":           6,
+    "Dark.TEntry":      6,
+    "TCombobox":        6,
+    "TSpinbox":         6,
+    "Card.TLabelframe": 16,
+}
+
+# Base row heights keyed by style, with the floor used at the smallest
+# scale. Row heights must follow the font or rows clip their own text.
+_STYLE_ROWHEIGHTS = {
+    "Treeview":             (28, 20),
+    "Library.Treeview":     (72, 48),
+    "FileMgr.Treeview":     (22, 16),
+    "FfpkgEdit.Treeview":   (22, 16),
+}
+
+_ACTIVE_UI_SCALE = 1.0
+
+
+def compute_ui_scale(width, height, design_width=780, design_height=760,
+                     min_scale=_UI_SCALE_MIN, max_scale=_UI_SCALE_MAX):
+    """Return the clamped type-scale factor for a client area.
+
+    The smaller of the width/height ratios is used, so a very wide but
+    short window never inflates text beyond the vertical space it has.
+    Returns 1.0 for an unmapped/unknown size.
+    """
+    try:
+        w = float(width)
+        h = float(height)
+        dw = max(1.0, float(design_width))
+        dh = max(1.0, float(design_height))
+    except (TypeError, ValueError):
+        return 1.0
+    if w <= 1 or h <= 1:
+        return 1.0
+    factor = min(w / dw, h / dh)
+    return max(float(min_scale), min(float(max_scale), factor))
+
+
+def _scale_font_spec(spec, factor):
+    """Scale a (family, size, *styles) tuple, never below _FONT_MIN_PT."""
+    try:
+        family = spec[0]
+        size = int(spec[1])
+        rest = tuple(spec[2:])
+    except (TypeError, ValueError, IndexError):
+        return spec
+    return (family, max(_FONT_MIN_PT, int(size * factor + 0.5))) + rest
+
+
+def set_scaled_font(widget, base_spec, factor=None):
+    """Configure `widget` with `base_spec` at the current scale.
+
+    Use this where a font is assigned *after* startup (active/inactive
+    state changes, drop-zone glyph resets, cover placeholders). Besides
+    looking right immediately, it updates the scaler's saved base, so a
+    later window resize cannot mistake the scaled value for a new base
+    and compound the factor.
+    """
+    if factor is None:
+        factor = _ACTIVE_UI_SCALE
+    try:
+        factor = float(factor)
+    except (TypeError, ValueError):
+        factor = 1.0
+    scaled = _scale_font_spec(base_spec, factor)
+    try:
+        widget.configure(font=scaled)
+    except tk.TclError:
+        return
+    if isinstance(base_spec, (tuple, list)):
+        try:
+            widget._ui_scale_font_base = tuple(base_spec)
+            widget._ui_scale_font_key = _font_key(scaled)
+        except (TypeError, ValueError, IndexError):
+            pass
+
+
+def set_scaled_dimension(widget, option, base_value, factor=None):
+    """Set an explicit pixel width/height at the current scale.
+
+    Use this where layout code changes a fixed container (a collapsed
+    sidebar rail, a resized column) after startup. It records the value
+    as the 100% base, so the next window resize scales from the design
+    size instead of treating the current scaled width as a new base.
+    """
+    if factor is None:
+        factor = _ACTIVE_UI_SCALE
+    try:
+        factor = float(factor)
+        base = int(base_value)
+    except (TypeError, ValueError):
+        return
+    if base < 1:
+        return
+    scaled = max(1, int(base * factor + 0.5))
+    try:
+        widget.configure(**{option: scaled})
+    except tk.TclError:
+        return
+    setattr(widget, "_ui_scale_%s_base" % option, base)
+    setattr(widget, "_ui_scale_%s_applied" % option, scaled)
+
+
+def _scale_padding(value, factor):
+    """Scale an int or (x, y) ttk padding tuple."""
+    if isinstance(value, (tuple, list)):
+        return tuple(max(1, int(v * factor + 0.5)) for v in value)
+    return max(1, int(value * factor + 0.5))
+
+
+def _parse_font_spec(widget, value):
+    """Parse a widget font option into a tuple, or None if it is unusable.
+
+    Named fonts (a single token such as "TkDefaultFont") are skipped:
+    they are shared, so rescaling them per widget would double-apply.
+    Pixel fonts (negative sizes) are intentional and left alone.
+    """
+    if value is None or value == "":
+        return None
+    try:
+        if isinstance(value, (tuple, list)):
+            parts = tuple(str(p) for p in value)
+        else:
+            parts = widget.tk.splitlist(str(value))
+    except (tk.TclError, ValueError):
+        return None
+    if len(parts) < 2:
+        return None
+    try:
+        size = int(float(parts[1]))
+    except (TypeError, ValueError):
+        return None
+    if size <= 0:
+        return None
+    return (parts[0], size) + tuple(parts[2:])
+
+
+def _font_key(parts):
+    """Normalised comparison key so Tk's reserialisation of a font does
+    not look like a user-initiated change (e.g. "normal" dropped)."""
+    styles = tuple(sorted(
+        str(p).lower() for p in parts[2:]
+        if str(p).lower() not in ("normal", "roman", "regular")))
+    return (str(parts[0]).lower(), int(parts[1]), styles)
+
+
+def _rescale_toplevel_geometry(win, factor):
+    """Scale a fixed-size dialog window with the type scale.
+
+    Only windows the user cannot resize are touched. Auto-sized dialogs
+    already grow with their scaled content, and user-resizable editors
+    must keep the size the user chose. Position is left to the window
+    manager (geometry with size only does not move the window).
+    """
+    try:
+        # Call Tcl directly: wm resizable takes an optional size, and this
+        # form is unambiguous across tkinter versions (returns "0 0").
+        flags = win.tk.splitlist(win.tk.call('wm', 'resizable', str(win)))
+        if any(int(f) for f in flags):
+            return
+        # Not shown yet: leave the geometry for the <Map> hook, which runs
+        # once the window has rendered and reports a real size.
+        if not win.winfo_ismapped():
+            return
+    except (TypeError, ValueError, tk.TclError):
+        return
+    try:
+        width = win.winfo_width()
+        height = win.winfo_height()
+    except tk.TclError:
+        return
+    if width <= 1 or height <= 1:
+        return
+
+    try:
+        factor_prev = float(getattr(win, "_ui_scale_geom_factor", 1.0))
+    except (TypeError, ValueError):
+        factor_prev = 1.0
+    if factor_prev <= 0:
+        factor_prev = 1.0
+    base = getattr(win, "_ui_scale_geom_base", None)
+    applied = getattr(win, "_ui_scale_geom_applied", None)
+    if base is None:
+        base = (width, height)          # first sight: assume 100% size
+    elif applied != (width, height):
+        # The app changed the size while the type was at factor_prev.
+        # Divide back to the 100% size instead of making the already
+        # scaled size the new base, which would compound on next resize.
+        base = (max(1, int(width / factor_prev + 0.5)),
+                max(1, int(height / factor_prev + 0.5)))
+    new_w = max(1, int(base[0] * factor + 0.5))
+    new_h = max(1, int(base[1] * factor + 0.5))
+    try:
+        # Never push a dialog off small screens.
+        new_w = min(new_w, max(320, win.winfo_screenwidth() - 60))
+        new_h = min(new_h, max(240, win.winfo_screenheight() - 100))
+    except tk.TclError:
+        pass
+    applied_ok = True
+    if (new_w, new_h) != (width, height):
+        try:
+            win.geometry("%dx%d" % (new_w, new_h))
+        except tk.TclError:
+            new_w, new_h = width, height
+            applied_ok = False
+    win._ui_scale_geom_base = base
+    win._ui_scale_geom_applied = (new_w, new_h)
+    if applied_ok:
+        win._ui_scale_geom_factor = factor
+
+
+def _rescale_widget(widget, factor):
+    """Rescale one widget's explicit font and wraplength, idempotently.
+
+    The pre-scale value is stored on the widget and reused on every
+    subsequent call, so dragging the window back and forth cannot
+    accumulate the factor. If application code assigns a *new* font at
+    runtime, the change is detected and becomes the new base.
+    """
+    try:
+        raw = widget.cget("font")
+    except tk.TclError:
+        raw = None
+    specs = _parse_font_spec(widget, raw) if raw else None
+    if specs is not None:
+        key = _font_key(specs)
+        base = getattr(widget, "_ui_scale_font_base", None)
+        applied = getattr(widget, "_ui_scale_font_key", None)
+        if base is None or applied != key:
+            base = specs                 # first sight, or changed by the app
+        new = _scale_font_spec(base, factor)
+        new_key = _font_key(new)
+        if new_key != key:
+            try:
+                widget.configure(font=new)
+            except tk.TclError:
+                new_key = key
+        widget._ui_scale_font_base = base
+        widget._ui_scale_font_key = new_key
+
+    try:
+        wrap = int(widget.cget("wraplength"))
+    except (tk.TclError, TypeError, ValueError):
+        wrap = 0
+    if wrap > 0:
+        base = getattr(widget, "_ui_scale_wrap_base", None)
+        applied = getattr(widget, "_ui_scale_wrap_applied", None)
+        if base is None or applied != wrap:
+            base = wrap
+        new = max(1, int(base * factor + 0.5))
+        if new != wrap:
+            try:
+                widget.configure(wraplength=new)
+            except tk.TclError:
+                new = wrap
+        widget._ui_scale_wrap_base = base
+        widget._ui_scale_wrap_applied = new
+
+    # Fixed-size dialogs: their content is scaled through the global ttk
+    # styles, so a non-resizable window sized for 100% type would clip it.
+    if isinstance(widget, tk.Toplevel):
+        _rescale_toplevel_geometry(widget, factor)
+        return
+
+    # Fixed-size tk.Frame containers (icon tiles, definition columns,
+    # sidebar rails, spacers). Frame width/height are pixels and default
+    # to 0, so any non-trivial value is one the UI set deliberately.
+    # Canvas is left alone: its defaults are non-zero and most canvases
+    # here are geometry-managed rather than text containers. Hairlines and
+    # small dots (< 16 px) keep their exact pixel size.
+    if not isinstance(widget, tk.Frame):
+        return
+    for opt in ("width", "height"):
+        try:
+            current = int(widget.cget(opt))
+        except (tk.TclError, TypeError, ValueError):
+            continue
+        if current < _MIN_SCALED_PX:
+            continue
+        base_attr = "_ui_scale_%s_base" % opt
+        applied_attr = "_ui_scale_%s_applied" % opt
+        base = getattr(widget, base_attr, None)
+        applied = getattr(widget, applied_attr, None)
+        if base is None or applied != current:
+            base = current
+        new = max(1, int(base * factor + 0.5))
+        if new != current:
+            try:
+                widget.configure(**{opt: new})
+            except tk.TclError:
+                new = current
+        setattr(widget, base_attr, base)
+        setattr(widget, applied_attr, new)
+
+
+def _walk_and_rescale(root, factor):
+    """Walk the whole widget tree (including Toplevels) and rescale."""
+    stack = [root]
+    while stack:
+        widget = stack.pop()
+        try:
+            _rescale_widget(widget, factor)
+        except (tk.TclError, RuntimeError):
+            pass
+        # A dialog that has never been mapped has not rendered yet. Leave
+        # its subtree at base size; the <Map> hook scales it when it is
+        # first shown, so the geometry read there is the unscaled natural
+        # size rather than a value that was already scaled once.
+        if widget is not root and isinstance(widget, tk.Toplevel):
+            try:
+                if not widget.winfo_ismapped():
+                    continue
+            except tk.TclError:
+                continue
+        try:
+            stack.extend(widget.winfo_children())
+        except tk.TclError:
+            pass
+
+
+def _apply_style_scale(style, factor):
+    """Rewrite ttk fonts/padding and metric values for `factor`."""
+    for name, token in _STYLE_FONTS.items():
+        spec = FONTS.get(token)
+        if not spec:
+            continue
+        try:
+            style.configure(name, font=_scale_font_spec(spec, factor))
+        except tk.TclError:
+            pass
+    for name, pad in _STYLE_PADDING.items():
+        try:
+            style.configure(name, padding=_scale_padding(pad, factor))
+        except tk.TclError:
+            pass
+    for name, (base, floor) in _STYLE_ROWHEIGHTS.items():
+        try:
+            style.configure(name, rowheight=max(floor, int(base * factor + 0.5)))
+        except tk.TclError:
+            pass
+
+
+def apply_ui_scale(root, factor, force=False):
+    """Apply `factor` to ttk styles and every explicit tk font/wraplength.
+
+    No-op when the factor is unchanged (or when scaling was never
+    installed on this root), which keeps repeated Configure events cheap.
+    `force` re-applies the same factor — used after a runtime UI rebuild
+    that recreated widgets and page-local ttk styles.
+    """
+    state = getattr(root, "_ui_scale_state", None)
+    if state is None:
+        return
+    try:
+        factor = float(factor)
+    except (TypeError, ValueError):
+        return
+    factor = max(state["min"], min(state["max"], factor))
+    if not force and abs(factor - state["factor"]) < 0.002:
+        return
+    state["factor"] = factor
+
+    global _ACTIVE_UI_SCALE
+    _ACTIVE_UI_SCALE = factor
+
+    try:
+        style = ttk.Style(root)
+    except (tk.TclError, RuntimeError):
+        style = None
+    if style is not None:
+        _apply_style_scale(style, factor)
+
+    # This option targets Tk's *internal* combobox popdown listbox, not a
+    # Python widget in the tree, so it cannot be double-scaled by the walk.
+    try:
+        root.option_add("*TCombobox*Listbox.font",
+                        _scale_font_spec(FONTS["body"], factor))
+    except tk.TclError:
+        pass
+
+    _walk_and_rescale(root, factor)
+
+
+def refresh_responsive_scaling(root):
+    """Re-apply the current factor after rebuilding UI at runtime.
+
+    A language change recreates tab widgets *and* re-runs page-local ttk
+    style setup (table fonts/row heights) at base size, so silently
+    re-applying the existing factor would leave those pieces behind.
+    """
+    state = getattr(root, "_ui_scale_state", None)
+    if state is None:
+        return
+    apply_ui_scale(root, state["factor"], force=True)
+
+
+def install_responsive_scaling(root, design_width=780, design_height=760,
+                               min_scale=_UI_SCALE_MIN,
+                               max_scale=_UI_SCALE_MAX, debounce_ms=140):
+    """Make type scale with the window.
+
+    Installs one debounced <Configure> handler on the root (so drag-resize
+    costs nothing until the user pauses) and a <Map> rescue hook that
+    scales dialogs and lazily-built tab contents created afterwards.
+    Safe to call twice: the configuration is updated, not stacked.
+    """
+    state = getattr(root, "_ui_scale_state", None)
+    if state is not None:
+        state.update(design_w=float(design_width),
+                     design_h=float(design_height),
+                     min=float(min_scale), max=float(max_scale),
+                     debounce=int(debounce_ms))
+        return
+
+    state = {
+        "factor": 1.0,
+        "after_id": None,
+        "design_w": float(design_width),
+        "design_h": float(design_height),
+        "min": float(min_scale),
+        "max": float(max_scale),
+        "debounce": int(debounce_ms),
+    }
+    root._ui_scale_state = state
+
+    def _apply_from_geometry():
+        state["after_id"] = None
+        try:
+            width = root.winfo_width()
+            height = root.winfo_height()
+        except tk.TclError:
+            return
+        factor = compute_ui_scale(width, height,
+                                  state["design_w"], state["design_h"],
+                                  state["min"], state["max"])
+        apply_ui_scale(root, factor)
+
+    def _on_configure(event):
+        # The toplevel bindtag also receives events from every child, so
+        # only react to the window itself changing size.
+        if event.widget is not root:
+            return
+        if state["after_id"] is not None:
+            try:
+                root.after_cancel(state["after_id"])
+            except (tk.TclError, ValueError):
+                pass
+        state["after_id"] = root.after(state["debounce"], _apply_from_geometry)
+
+    def _on_map(event):
+        # Newly created widgets (dialogs, lazy tabs) arrive unscaled.
+        if abs(state["factor"] - 1.0) < 0.002:
+            return
+        try:
+            _rescale_widget(event.widget, state["factor"])
+        except (tk.TclError, RuntimeError):
+            pass
+
+    root.bind("<Configure>", _on_configure, add="+")
+    root.bind_all("<Map>", _on_map, add="+")
+
+    # Catch a window restored at a larger size before it is mapped.
+    try:
+        root.after_idle(_apply_from_geometry)
+    except tk.TclError:
+        pass
+
+
+# ────────────────────────────────────────────────────────────────────
 # CONVENIENCE WIDGET FACTORIES
 # Use these instead of raw tk.* widgets for consistent look without
 # remembering style names.
@@ -560,9 +1086,9 @@ def make_callout(parent: tk.Widget, kind: str = "info", text: str = "") -> tk.Fr
     .info / .warn / .danger / .success classes in the design system.
     """
     palette = {
-        "info":    (COLORS["info_bg"],    COLORS["accent"],     "#9ecdff"),
+        "info":    (COLORS["info_bg"],    COLORS["accent"],     COLORS["accent_hi"]),
         "warn":    (COLORS["warn_bg"],    COLORS["warn"],       COLORS["warn_hi"]),
-        "danger":  (COLORS["danger_bg"],  COLORS["danger"],     "#ff8080"),
+        "danger":  (COLORS["danger_bg"],  COLORS["danger"],     COLORS["danger_hi"]),
         "success": (COLORS["success_bg"], COLORS["success"],    COLORS["success_hi"]),
     }
     bg, accent_color, fg = palette.get(kind, palette["info"])
@@ -593,12 +1119,17 @@ def make_status_pill(parent: tk.Widget, kind: str, text: str) -> tk.Label:
 
 
 def make_titlebar(parent: tk.Widget, title: str, version: str = "") -> ttk.Frame:
-    """The app's top header strip: brand + version, accent underline."""
+    """The app's top header strip: brand rule + title + version.
+
+    Uses a slim blue rule instead of an emoji/icon tile — the same
+    navigation language as the page headers.
+    """
     bar = ttk.Frame(parent, style="Card.TFrame", padding=(20, 14))
     bar.pack(fill="x")
-    ttk.Label(bar, text="🎮", font=(_SANS, 18), style="OnCard.TLabel").pack(side="left")
+    rule = tk.Frame(bar, bg=COLORS["accent"], width=3, height=36)
+    rule.pack(side="left", fill="y")
     title_frame = ttk.Frame(bar, style="Card.TFrame")
-    title_frame.pack(side="left", padx=(10, 0))
+    title_frame.pack(side="left", padx=(12, 0))
     ttk.Label(title_frame, text=title, style="OnCard.H3.TLabel",
               font=(_SANS, 13, "bold")).pack(anchor="w")
     if version:
@@ -762,7 +1293,7 @@ def get_color(name, fallback=None):
     if fallback is not None:
         # fallback may itself be a token name — resolve one level.
         return COLORS.get(fallback, fallback)
-    return COLORS.get("fg_1", "#e0dcec")
+    return COLORS.get("fg_1", "#F5F7FA")
 
 
 def get_font(name, fallback=None):
@@ -838,8 +1369,8 @@ def apply_button_style(widget, variant="default"):
         "secondary": ("bg_4",   "accent"),
         "ghost":     ("bg_1",   "fg_3"),
         "warn":      ("warn",   "bg_0"),
-        "danger":    ("danger", "fg_0"),
-        "success":   ("success", "fg_0"),
+        "danger":    ("danger", "bg_0"),
+        "success":   ("success", "bg_0"),
         "backport":  ("purple", "fg_0"),
         "purple":    ("purple", "fg_0"),
     }
@@ -947,8 +1478,8 @@ if __name__ == "__main__":
     nb = ttk.Notebook(main)
     nb.pack(fill="both", expand=True)
 
-    for label in ("📀 exFAT", "📦 ffpkg", "📚 Library", "💾 My Images",
-                  "📋 Klog", "⚙ Settings"):
+    for label in ("exFAT", "ffpkg", "Library", "My Images",
+                  "Klog", "Settings"):
         page = ttk.Frame(nb, style="Surface.TFrame", padding=20)
         nb.add(page, text=label)
 
@@ -965,11 +1496,11 @@ if __name__ == "__main__":
     ttk.Button(row, text="Browse…", style="Secondary.TButton").pack(side="left")
 
     btnrow = ttk.Frame(card, style="Card.TFrame"); btnrow.pack(fill="x", pady=(16, 0))
-    ttk.Button(btnrow, text="+ Add to Queue", style="Primary.TButton").pack(side="left", padx=(0, 8))
-    ttk.Button(btnrow, text="Build All",      style="Success.TButton").pack(side="left", padx=(0, 8))
-    ttk.Button(btnrow, text="⏸ Pause",        style="Secondary.TButton").pack(side="left", padx=(0, 8))
-    ttk.Button(btnrow, text="⚠ Backport",     style="Backport.TButton").pack(side="left", padx=(0, 8))
-    ttk.Button(btnrow, text="Cancel",         style="Ghost.TButton").pack(side="right")
+    ttk.Button(btnrow, text="Add to Queue", style="Primary.TButton").pack(side="left", padx=(0, 8))
+    ttk.Button(btnrow, text="Build All",    style="Success.TButton").pack(side="left", padx=(0, 8))
+    ttk.Button(btnrow, text="Pause",        style="Secondary.TButton").pack(side="left", padx=(0, 8))
+    ttk.Button(btnrow, text="Backport",     style="Backport.TButton").pack(side="left", padx=(0, 8))
+    ttk.Button(btnrow, text="Cancel",       style="Ghost.TButton").pack(side="right")
 
     make_callout(page, "info",
         "Sector size is locked at 512 bytes — required for PS5 compatibility."

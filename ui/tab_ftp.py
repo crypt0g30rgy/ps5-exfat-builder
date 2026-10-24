@@ -6,16 +6,16 @@ Step 12 (v2.1.4): refactored against preview/ftp-tab-redesign.html.
 Layout:
 
     ┌─ subtab bar ────────────────────────────────────────────────────┐
-    │ [↑ Quick Upload] [📂 PS5 Browser ←active]                       │
+    │ [↑ Quick Upload] [▤ PS5 Browser ←active]                       │
     ├─ connection bar ────────────────────────────────────────────────┤
     │ ●CONNECTED  192.168.1.42:2121  FW 5.50  latency 4ms             │
     │                              [Disconnect] [↻ Refresh]           │
     ├─ workspace ─────────────────────────────────────────────────────┤
     │ ┌─ Local pane ───────┐ ┌─ → ←┐ ┌─ PS5 pane ────────────────┐    │
     │ │ Local  [path][⌂]   │ │     │ │ PS5   [path][⌂]            │   │
-    │ │ ↑ ↻ 📁+ 🗑 ✎       │ │     │ │ ↑ ↻ 📁+ 🗑 ✎               │   │
-    │ │ 📁 ..              │ │     │ │ 📁 ..                       │   │
-    │ │ 💾 file1.exfat     │ │     │ │ 💾 file1.exfat              │   │
+    │ │ ↑ ↻ ▤+ ✕ ✎       │ │     │ │ ↑ ↻ ▤+ ✕ ✎               │   │
+    │ │ ▤ ..              │ │     │ │ ▤ ..                       │   │
+    │ │ ▣ file1.exfat     │ │     │ │ ▣ file1.exfat              │   │
     │ │ ...                │ │     │ │ ...                          │   │
     │ │ 7 items, 2 sel     │ │     │ │ 7 items, 0 sel               │   │
     │ └────────────────────┘ └─────┘ └─────────────────────────────┘   │
@@ -142,7 +142,7 @@ def _build_subtab_bar(parent, app):
 
     app._ftp_sub_upload_btn  = _make_subtab('\u2191  ' + _('Quick Upload'),
                                              'upload')
-    app._ftp_sub_browser_btn = _make_subtab('\U0001f4c2  ' + _('PS5 Browser'),
+    app._ftp_sub_browser_btn = _make_subtab('▤  ' + _('PS5 Browser'),
                                              'browser')
 
 
@@ -355,7 +355,7 @@ def _build_upload_subtab(parent, app):
 
     # ── Connection information card ──
     info_card = Card(body, title=_('Connection information'),
-                     icon='\U0001f50c',
+                     icon='◉',
                      subtitle=_('Set the PS5 IP in Settings or the '
                                 'connection bar above. Default FTP ports: '
                                 '2121 (ftpsrv) / 1337 (etaHEN).'))
@@ -445,7 +445,7 @@ def _build_upload_subtab(parent, app):
     btn_row = tk.Frame(form, bg=COLORS['bg_2'])
     btn_row.pack(fill='x', pady=(8, 0))
     app._ftptab_upload_btn = _accent_btn(btn_row,
-        '\U0001f4e1  ' + _('Upload to PS5'),
+        '◉  ' + _('Upload to PS5'),
         command=app._ftptab_start_upload)
     app._ftptab_upload_btn.pack(side='left')
     app._ftptab_cancel_btn = tk.Button(btn_row,
@@ -494,7 +494,7 @@ def _build_upload_subtab(parent, app):
 
     # Output log — its own card so the dashboard reads as discrete
     # surfaces (strip / connection / upload / log)
-    log_card = Card(body, title=_('Output log'), icon='\U0001f4dd')
+    log_card = Card(body, title=_('Output log'), icon='✎')
     log_card.pack(fill='both', expand=True)
     log_frame = tk.Frame(log_card.body, bg=COLORS['bg_3'],
                          highlightbackground=COLORS['border_3'],
@@ -654,10 +654,10 @@ def _build_local_pane(parent, app):
     _icon_btn(tb, '\u21bb', tooltip='Refresh',
               command=lambda: _lp_load(app)
               ).pack(side='left', padx=2)
-    _icon_btn(tb, '\U0001f4c1+', tooltip='New folder',
+    _icon_btn(tb, '▤+', tooltip='New folder',
               command=lambda: _lp_new_folder(app)
               ).pack(side='left', padx=2)
-    _icon_btn(tb, '\U0001f5d1', tooltip='Delete', danger=True,
+    _icon_btn(tb, '✕', tooltip='Delete', danger=True,
               command=lambda: _lp_delete(app)
               ).pack(side='left', padx=2)
     _icon_btn(tb, '\u270e', tooltip='Rename',
@@ -762,10 +762,10 @@ def _build_remote_pane(parent, app):
     _icon_btn(tb, '\u21bb', tooltip='Refresh',
               command=lambda: app._br_load(app._br_path.get())
               ).pack(side='left', padx=2)
-    _icon_btn(tb, '\U0001f4c1+', tooltip='New folder',
+    _icon_btn(tb, '▤+', tooltip='New folder',
               command=app._br_new_folder
               ).pack(side='left', padx=2)
-    _icon_btn(tb, '\U0001f5d1', tooltip='Delete', danger=True,
+    _icon_btn(tb, '✕', tooltip='Delete', danger=True,
               command=app._br_delete
               ).pack(side='left', padx=2)
     _icon_btn(tb, '\u270e', tooltip='Rename',
@@ -1000,10 +1000,10 @@ def _lp_load(app):
     # Show ".." up-one-level except at the drive root
     parent_dir = os.path.dirname(path.rstrip(os.sep))
     if parent_dir and parent_dir != path:
-        app._lp_listbox.insert('end', '\U0001f4c1  ..')
+        app._lp_listbox.insert('end', '▤  ..')
 
     for name, is_dir, sz in entries:
-        icon = '\U0001f4c1' if is_dir else _file_icon(name)
+        icon = '▤' if is_dir else _file_icon(name)
         size_str = '' if is_dir else _humanize(sz)
         # Pad name to consistent column for the size on the right
         line = '%s  %s' % (icon, name)
@@ -1220,18 +1220,18 @@ def _file_icon(name):
     """Pick a small emoji icon for a filename."""
     lower = name.lower()
     if lower.endswith('.exfat'):
-        return '\U0001f4be'  # 💾
+        return '▣'  # ▣
     if lower.endswith('.ffpkg'):
-        return '\U0001f4e6'  # 📦
+        return '▣'  # ▣
     if lower.endswith(('.txt', '.log', '.csv', '.json')):
-        return '\U0001f4cb'  # 📋
+        return '≣'  # ≣
     if lower.endswith(('.zip', '.7z', '.rar', '.tar')):
-        return '\U0001f5dc'  # 🗜
+        return '▣'  # ▣
     if lower.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
-        return '\U0001f5bc'  # 🖼
+        return '▣'  # ▣
     if lower.endswith(('.exe', '.bat', '.ps1')):
         return '\u2699'      # ⚙
-    return '\U0001f4c4'      # 📄
+    return '≣'      # ≣
 
 
 def _humanize(sz):

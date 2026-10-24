@@ -5,7 +5,7 @@ Step 3 (v2.0.5): refactored against preview/exfat-tab-redesign.html.
 
 Layout (two-column grid on the page):
 
-    [page-head: 💾  Build exFAT Image  + subtitle      ]   ← spans full width
+    [page-head: ▣  Build exFAT Image  + subtitle      ]   ← spans full width
     [info banner: Tip about Advanced settings          ]   ← spans full width
 
     LEFT (1.4fr)                          RIGHT (1fr)
@@ -17,8 +17,8 @@ Layout (two-column grid on the page):
     │ Output dir: [_________][Br]  │      ┌──── Build queue ─────────┐
     │ Output filename preview      │      │ Header: count + actions  │
     ├──── Action bar ──────────────┤      │ qlist scrollable         │
-    │ [+ Add] [▶ Build] [⏸ Pause]  │      │   1 ● Building 63%        │
-    │              [⏏ Force Dis.]   │      │   2  Waiting              │
+    │ [+ Add] [▶ Build] [‖ Pause]  │      │   1 ● Building 63%        │
+    │              [✕ Force Dis.]   │      │   2  Waiting              │
     └──────────────────────────────┘      └──────────────────────────┘
 
     [Status row: detected message text]  ← bottom, full width
@@ -66,8 +66,8 @@ def _make_themed_button(parent, text, command, kind='primary',
     and consistency across the app today.
 
     `kind` maps to the design tokens directly:
-        'primary'      — accent (purple) fill, white text. Main CTA.
-        'success'      — muted teal fill, white text. Secondary
+        'primary'      — primary blue fill, white text. Main CTA.
+        'success'      — lighter PlayStation blue, white text. Secondary
                          forward action (Build All).
         'success_done' — bright green. ONLY for "done/verified" state.
         'warn'         — warn fill, dark text.
@@ -77,14 +77,14 @@ def _make_themed_button(parent, text, command, kind='primary',
     schemes = {
         'primary':      (COLORS['accent'],  COLORS['fg_0'],
                          COLORS['accent_hi'], COLORS['fg_0']),
-        # 'success' = muted teal — was bright mint, recoloured app-wide
-        # to feel cohesive with the brand purple instead of stoplighty.
+        # 'success' = secondary blue — was bright mint, recoloured
+        # app-wide to read as a forward action next to the primary CTA.
         'success':      (COLORS['teal'],    COLORS['fg_0'],
                          COLORS['teal_hi'], COLORS['fg_0']),
         'success_done': (COLORS['success'], COLORS['fg_0'],
                          COLORS['success_hi'], COLORS['fg_0']),
-        'warn':         (COLORS['warn'],    '#1a0e00',
-                         COLORS['warn_hi'], '#1a0e00'),
+        'warn':         (COLORS['warn'],    COLORS['bg_0'],
+                         COLORS['warn_hi'], COLORS['bg_0']),
         'danger':       (COLORS['danger'],  COLORS['fg_0'],
                          COLORS['danger_hi'], COLORS['fg_0']),
         'ghost':        (COLORS['bg_2'],    COLORS['fg_3'],
@@ -143,19 +143,17 @@ def _info_banner(parent, text, on_click=None):
     return bar
 
 
-def _page_head(parent, badge_emoji, title_text, subtitle_text):
-    """Top-of-page header with a gradient-ish badge tile + title + subtitle."""
+def _page_head(parent, badge_emoji=None, title_text='', subtitle_text=''):
+    """Top-of-page header: slim blue rule + title + subtitle.
+
+    `badge_emoji` is accepted for compatibility and ignored — the shared
+    shell uses one quiet navigation language on every page.
+    """
     bg = COLORS['bg_1']
     head = tk.Frame(parent, bg=bg)
 
-    # Badge tile (accent gradient approximation — solid accent with darker border)
-    badge = tk.Label(head, text=badge_emoji,
-                     bg=COLORS['accent'], fg=COLORS['fg_0'],
-                     font=(FONTS['body'][0], 18, 'bold'),
-                     width=3, height=2, padx=4, pady=0,
-                     highlightbackground=COLORS['accent_pressed'],
-                     highlightthickness=1)
-    badge.pack(side='left', padx=(0, 14))
+    rule = tk.Frame(head, bg=COLORS['accent'], width=3, height=44)
+    rule.pack(side='left', fill='y', padx=(0, 14))
 
     text_col = tk.Frame(head, bg=bg)
     text_col.pack(side='left', fill='x', expand=True)
@@ -209,7 +207,7 @@ def build_exfat_tab(parent, app):
     grid.grid_rowconfigure(2, weight=1)                    # third row stretches
 
     # Row 0: page-head spanning full width
-    head = _page_head(grid, '\U0001f4be', 'Build exFAT Image',
+    head = _page_head(grid, None, 'Build exFAT Image',
                       'Pick a game folder, set the output, and queue the build.')
     head.grid(row=0, column=0, columnspan=2, sticky='ew', pady=(0, 10))
 
@@ -331,7 +329,7 @@ def _build_left_column(grid, app):
     multi_row = tk.Frame(body, bg=COLORS['bg_2'])
     multi_row.pack(fill='x', pady=(6, 0))
     multi_btn = tk.Button(multi_row,
-                          text='\U0001f4c1  Add multiple folders at once',
+                          text='▤  Add multiple folders at once',
                           font=(FONTS['body'][0], 10),
                           bg=COLORS['bg_2'], fg=COLORS['accent'],
                           activebackground=COLORS['bg_2'],
@@ -374,6 +372,15 @@ def _build_left_column(grid, app):
     app._no_sfo_label.pack(side='left')
     app._no_sfo_label.pack_forget()
 
+    app._naming_template_btn = tk.Button(
+        fn_label_row, text='Filename template\u2026',
+        font=FONTS['meta'],
+        bg=COLORS['bg_2'], fg=COLORS['accent'],
+        activebackground=COLORS['bg_2'], activeforeground=COLORS['accent_hi'],
+        relief='flat', bd=0, cursor='hand2',
+        command=app._open_output_naming_settings)
+    app._naming_template_btn.pack(side='right')
+
     fn_input = tk.Frame(fn_block, bg=COLORS['bg_3'],
                         highlightbackground=COLORS['border_3'],
                         highlightthickness=1)
@@ -402,7 +409,7 @@ def _build_left_column(grid, app):
 
     app._pause_btn = _make_themed_button(
         card.actions, 'Pause', command=app._toggle_pause_queue,
-        kind='warn', icon='\u23f8',
+        kind='warn', icon='‖',
         font_size=10, padx=14, pady=8, state='disabled')
     app._pause_btn.pack(side='left', padx=(0, 6))
 
@@ -412,7 +419,7 @@ def _build_left_column(grid, app):
 
     _make_themed_button(card.actions, 'Force Dismount',
                         command=app._force_dismount_all,
-                        kind='ghost', icon='\u23cf',
+                        kind='ghost', icon='✕',
                         font_size=9, padx=12, pady=8
                         ).pack(side='left')
 
@@ -536,7 +543,7 @@ def _build_right_column(grid, app):
     prog_card = Card(col,
                      title='Build progress',
                      subtitle='Live status appears here once a build starts.',
-                     icon='\U0001f4ca')  # 📊
+                     icon='\u25a6')  # ▦
     prog_card.pack(fill='x', pady=(0, 10))
 
     # The progress stages live in the card body. We pin the body to a
@@ -611,18 +618,18 @@ def _build_right_column(grid, app):
 
     head_right = tk.Frame(q_head, bg=COLORS['bg_2'])
     head_right.pack(side='right')
-    _qbtn(head_right, '\U0001f4c2  Load',
+    _qbtn(head_right, '▤  Load',
           command=app._queue_load).pack(side='left', padx=(0, 4))
-    _qbtn(head_right, '\U0001f4be  Save',
+    _qbtn(head_right, '▣  Save',
           command=app._queue_save).pack(side='left', padx=(0, 4))
-    _qbtn(head_right, '\U0001f5d1  Clear', danger=True,
+    _qbtn(head_right, '✕  Clear', danger=True,
           command=app._clear_queue).pack(side='left')
 
     # Drop hint sits inside the queue card, just above the list. Same DnD
     # logic as the legacy code — when tkinterdnd2 is unavailable we just
     # show a less-encouraging hint.
     dnd_hint = tk.Label(q_card.body,
-                        text='\U0001f3ae  Drop game folders here to add to queue',
+                        text='◉  Drop game folders here to add to queue',
                         font=FONTS['meta'],
                         bg=COLORS['bg_2'], fg=COLORS['fg_5'])
     dnd_hint.pack(pady=(10, 8))
@@ -669,7 +676,7 @@ def _build_right_column(grid, app):
                                     text='\u2713  Added to queue')
                     app.after(2000, lambda: dnd_hint.config(
                         fg=COLORS['fg_5'],
-                        text='\U0001f3ae  Drop game folders here to add to queue'))
+                        text='◉  Drop game folders here to add to queue'))
         except Exception as e:
             app._log('[DROP] Error: %s\n' % e)
 

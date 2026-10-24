@@ -15,7 +15,10 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from tkinter_theme import COLORS, FONTS
+from naming import (
+    DEFAULT_OUTPUT_TEMPLATE, get_game_metadata, render_output_stem,
+    sanitize_filename)
+from tkinter_theme import COLORS, FONTS, set_scaled_font
 from ui.shared.page_head import (
     make_themed_button, info_banner, page_head, field_block)
 from ui.shared.scroll import attach_scroll
@@ -31,10 +34,11 @@ _STATUS_BADGE = {
     'done':    ('COMPLETE', 'success'),
     'failed':  ('FAILED',   'danger'),
     'skipped': ('SKIPPED',  'fg_5'),
+    'cancelled': ('CANCELLED', 'warn'),
 }
 
-_DARK_TEXT = '#001a05'   # readable text on the green/teal pills
-_SEL_BG    = '#242c3a'   # bg_3 + ~12% teal — selected-tile fill (subtle, no glow)
+_DARK_TEXT = COLORS['bg_0']   # readable text on the green/blue pills
+_SEL_BG    = COLORS['accent_15']   # selected-tile fill (subtle, no glow)
 
 
 def _dash_card(parent, title, subtitle=None,
@@ -140,7 +144,9 @@ def build_unibuild_tab(parent, app):
 
     # ── State ────────────────────────────────────────────────────────
     src_var    = tk.StringVar()
-    outdir_var = tk.StringVar()
+    # Shared with the Settings output-folder row and the legacy Build tab
+    # so picking a folder in one place applies everywhere.
+    outdir_var = app.output_dir
     name_var   = tk.StringVar()
     out_type   = tk.StringVar(value='exfat')   # exfat | ffpkg | pfs
     pfs_via    = tk.StringVar(value=str(
@@ -182,7 +188,7 @@ def build_unibuild_tab(parent, app):
     cover_ref = {'img': None}
     tile_refs = {}
     queue     = []
-    uq_state  = {'sel': {}, 'running': False}
+    uq_state  = {'sel': {}, 'running': False, 'cancelled': False}
 
     def _browse_src():
         if out_type.get() == 'pfs' and pfs_src_mode.get() == 'image':
@@ -197,10 +203,30 @@ def build_unibuild_tab(parent, app):
         if p:
             src_var.set(p)
 
+    def _remember_outdir(path):
+        """Keep the unified Build tab's output folder as the global
+        default (also used by the legacy Build tab and the queue).
+
+        output_dir is shared with Settings, whose write trace mirrors the
+        value into settings and schedules the disk save.
+        """
+        path = (path or '').strip()
+        if not path:
+            return
+        try:
+            app.output_dir.set(path)
+            app._settings['output_dir'] = path
+        except Exception:
+            pass
+
     def _browse_out():
-        p = filedialog.askdirectory(title='Select output folder')
+        current = outdir_var.get().strip()
+        p = filedialog.askdirectory(
+            title='Select output folder',
+            initialdir=current if os.path.isdir(current) else None)
         if p:
             outdir_var.set(p)
+            _remember_outdir(p)
 
     def _browse_temp():
         p = filedialog.askdirectory(title='Select temp / spool folder')
@@ -222,7 +248,7 @@ def build_unibuild_tab(parent, app):
     hero_in = tk.Frame(hero, bg=COLORS['bg_2'])
     hero_in.pack(fill='both', expand=True, padx=16, pady=16)
 
-    cover_lbl = tk.Label(hero_in, text='\U0001f3ae', font=('Segoe UI', 56),
+    cover_lbl = tk.Label(hero_in, text='◉', font=('Segoe UI', 56),
                          bg=COLORS['bg_4'], fg=COLORS['fg_5'], width=4, height=4)
     cover_lbl.pack(side='left', padx=(0, 16))
 
@@ -239,11 +265,11 @@ def build_unibuild_tab(parent, app):
     stat_row.pack(fill='x')
     for c in range(3):
         stat_row.columnconfigure(c, weight=1, uniform='hs')
-    b1, _ = _hero_stat(stat_row, '\U0001f9e9  VERSION', hero_ver_var)
+    b1, _ = _hero_stat(stat_row, '▣  VERSION', hero_ver_var)
     b1.grid(row=0, column=0, sticky='ew', padx=(0, 6))
-    b2, _ = _hero_stat(stat_row, '\U0001f4be  DUMP SIZE', hero_size_var)
+    b2, _ = _hero_stat(stat_row, '▣  DUMP SIZE', hero_size_var)
     b2.grid(row=0, column=1, sticky='ew', padx=6)
-    b3, free_val = _hero_stat(stat_row, '\U0001f5c4  OUTPUT FREE', hero_free_var)
+    b3, free_val = _hero_stat(stat_row, '▤  OUTPUT FREE', hero_free_var)
     b3.grid(row=0, column=2, sticky='ew', padx=(6, 0))
 
     hero_bottom = tk.Frame(hcol, bg=COLORS['bg_2'])
@@ -253,7 +279,7 @@ def build_unibuild_tab(parent, app):
                            bg=COLORS['success'], fg=_DARK_TEXT, padx=10, pady=4)
     make_themed_button(hero_bottom, text='Browse dump',
                        command=lambda: _browse_src(), kind='accent',
-                       icon='\U0001f4c1', font_size=9, padx=12,
+                       icon='▤', font_size=9, padx=12,
                        pady=6).pack(side='right')
 
     # ── Output-format card ──
@@ -335,14 +361,14 @@ def build_unibuild_tab(parent, app):
                 pass
         tile_refs[key] = {'card': card, 'labels': labels, 'check': check}
 
-    _make_type_card(0, 'exfat', '\U0001f528', 'exFAT',
+    _make_type_card(0, 'exfat', '▦', 'exFAT',
                     'Recommended \u2014 mountable image for most setups',
                     recommended=True,
                     tip='Recommended for most users. Easy to mount and '
                         'widely supported.')
-    _make_type_card(1, 'ffpkg', '\U0001f4e6', 'ffpkg', 'Package-style image',
+    _make_type_card(1, 'ffpkg', '▣', 'ffpkg', 'Package-style image',
                     tip='Package-style image format.')
-    _make_type_card(2, 'pfs', '\U0001f5dc', 'PFS',
+    _make_type_card(2, 'pfs', '▣', 'PFS',
                     'Compressed image \u2014 smaller, slower to build',
                     tip='Compressed image format. Smaller size, slower '
                         'build.')
@@ -468,9 +494,9 @@ def build_unibuild_tab(parent, app):
         cover_ref['img'] = None
         try:
             cover_lbl.config(image='',
-                             text='🗜' if pfs_src_mode.get() == 'image'
-                             else '🎮',
-                             font=('Segoe UI', 56), width=4, height=4)
+                             text='▣' if pfs_src_mode.get() == 'image'
+                             else '◉', width=4, height=4)
+            set_scaled_font(cover_lbl, ('Segoe UI', 56))
         except Exception:
             pass
         _refresh_via()
@@ -720,7 +746,7 @@ def build_unibuild_tab(parent, app):
     tips_caret = tk.Label(tips_hdr, text='\u25b8', font=FONTS['mono_sm'],
                           bg=COLORS['bg_3'], fg=COLORS['accent_hi'])
     tips_caret.pack(side='left', padx=(10, 6), pady=7)
-    tk.Label(tips_hdr, text='\u26a1  Fastest builds & compression',
+    tk.Label(tips_hdr, text='◈  Fastest builds & compression',
              font=(FONTS['mono_sm'][0], 9, 'bold'),
              bg=COLORS['bg_3'], fg=COLORS['fg_1']).pack(side='left', pady=7)
 
@@ -783,6 +809,15 @@ def build_unibuild_tab(parent, app):
                                    kind='success', icon='\u25b6',
                                    font_size=13, padx=34, pady=14)
     btn_build.pack(side='right')
+    btn_stop = make_themed_button(btn_row, text='Stop',
+                                  command=lambda: _uq_stop(),
+                                  kind='danger', icon='■',
+                                  font_size=9, padx=14, pady=9)
+    btn_stop.pack(side='right', padx=(0, 8))
+    try:
+        btn_stop.config(state='disabled')
+    except Exception:
+        pass
     btn_add = make_themed_button(btn_row, text='Add to queue',
                                  command=lambda: _uq_add(),
                                  kind='accent', icon='\u002b',
@@ -815,14 +850,22 @@ def build_unibuild_tab(parent, app):
                                       head_pady=(12, 0), body_pady=(6, 12))
     name_card.grid(row=0, column=1, sticky='nsew', padx=(6, 0))
 
-    tk.Label(name_body, text='OUTPUT NAME PRESET', font=FONTS['eyebrow'],
-             bg=COLORS['bg_2'], fg=COLORS['fg_5'], anchor='w').pack(
-                 anchor='w', pady=(0, 4))
+    preset_head = tk.Frame(name_body, bg=COLORS['bg_2'])
+    preset_head.pack(fill='x', pady=(0, 4))
+    tk.Label(preset_head, text='OUTPUT NAME PRESET', font=FONTS['eyebrow'],
+             bg=COLORS['bg_2'], fg=COLORS['fg_5'], anchor='w').pack(side='left')
+    tk.Button(preset_head, text='Edit template…',
+              font=FONTS['meta'], bg=COLORS['bg_2'], fg=COLORS['accent'],
+              activebackground=COLORS['bg_2'],
+              activeforeground=COLORS['accent_hi'],
+              relief='flat', bd=0, cursor='hand2',
+              command=app._open_output_naming_settings).pack(side='right')
     preset_row = tk.Frame(name_body, bg=COLORS['bg_2'])
     preset_row.pack(fill='x', pady=(0, 2))
     for val, lab in (('ppsa', 'PPSA only'),
                      ('ppsa_title', 'PPSA + Title'),
-                     ('ppsa_title_ver', 'PPSA + Title + Version')):
+                     ('ppsa_title_ver', 'PPSA + Title + Version'),
+                     ('custom', 'Custom template')):
         tk.Radiobutton(preset_row, text=lab, value=val, variable=name_preset,
                        command=lambda: _gen_name(),
                        font=FONTS['mono_sm'], bg=COLORS['bg_2'],
@@ -887,24 +930,23 @@ def build_unibuild_tab(parent, app):
         tid = (detected.get('title_id') or '').strip()
         title = (detected.get('title') or '').strip()
         ver = (detected.get('version') or '').strip()
+        firmware = (detected.get('firmware') or '').strip()
         preset = name_preset.get()
-        if preset == 'ppsa':
-            base = tid
-        elif preset == 'ppsa_title':
-            base = (tid + ' ' + title).strip() if title else tid
-        else:
-            nm = (tid + ' ' + title).strip() if title else tid
-            base = (nm + ' (' + ver + ')') if ver else nm
+        templates = {
+            'ppsa': '%PPSA%',
+            'ppsa_title': '%PPSA% %TITLE%',
+            'ppsa_title_ver': DEFAULT_OUTPUT_TEMPLATE,
+            'custom': (app._settings.get('output_name_template')
+                       or DEFAULT_OUTPUT_TEMPLATE),
+        }
+        base = render_output_stem(title, tid, ver, firmware,
+                                  templates.get(preset))
         if not base:
             _bn = os.path.basename(folder.rstrip('/\\'))
             if out_type.get() == 'pfs' and pfs_src_mode.get() == 'image':
                 _bn = os.path.splitext(_bn)[0]
             base = _bn
-        try:
-            from exfat_builder import sanitize_filename
-            base = sanitize_filename(base) or base
-        except Exception:
-            pass
+        base = sanitize_filename(base) or base
         name_var.set(base + ext)
 
     def _fmt_b(b):
@@ -1105,14 +1147,15 @@ def build_unibuild_tab(parent, app):
             detected['title'] = ttl
             detected['title_id'] = tid
             detected['version'] = ver
+            detected['firmware'] = ''
             detected['folder'] = ''
             det_title_var.set((ttl or tid or stem).upper())
             det_id_var.set(tid or '\u2014')
             hero_ver_var.set(ver or '\u2014')
             cover_ref['img'] = None
             try:
-                cover_lbl.config(image='', text='\U0001f5dc',
-                                 font=('Segoe UI', 56), width=4, height=4)
+                cover_lbl.config(image='', text='▣', width=4, height=4)
+                set_scaled_font(cover_lbl, ('Segoe UI', 56))
             except Exception:
                 pass
             _gen_name()
@@ -1130,9 +1173,13 @@ def build_unibuild_tab(parent, app):
 
         def _w():
             title = title_id = version = ''
+            firmware = ''
             try:
-                from exfat_builder import get_game_info
-                title, title_id, version = get_game_info(folder)
+                meta = get_game_metadata(folder)
+                title    = meta['title'] or ''
+                title_id = meta['title_id'] or ''
+                version  = meta['version'] or ''
+                firmware = meta['firmware'] or ''
             except Exception:
                 pass
             if not title_id:
@@ -1144,6 +1191,7 @@ def build_unibuild_tab(parent, app):
             detected['title'] = title
             detected['title_id'] = title_id
             detected['version'] = version
+            detected['firmware'] = firmware
             detected['folder'] = folder
             got_cover = {'ok': False}
             try:
@@ -1172,13 +1220,16 @@ def build_unibuild_tab(parent, app):
             def _done():
                 if not got_cover['ok']:
                     cover_ref['img'] = None
-                    cover_lbl.config(image='', text='\U0001f3ae',
-                                     font=('Segoe UI', 56), width=4, height=4)
+                    cover_lbl.config(image='', text='◉', width=4, height=4)
+                    set_scaled_font(cover_lbl, ('Segoe UI', 56))
                 disp = (title or title_id
                         or os.path.basename(folder.rstrip('/\\')))
                 det_title_var.set(disp.upper())
                 det_id_var.set(title_id or '\u2014')
-                hero_ver_var.set(version or '\u2014')
+                hero_ver_var.set(
+                    ((version or '') +
+                     ('   FW ' + firmware if firmware else '')).strip()
+                    or '\u2014')
                 _gen_name()
                 _refresh_ready()
             parent.after(0, _done)
@@ -1416,7 +1467,7 @@ def build_unibuild_tab(parent, app):
         for i, name in enumerate(phases):
             cell = tk.Frame(phase_row, bg=COLORS['bg_3'])
             cell.pack(side='left', expand=True, fill='x')
-            icon = tk.Label(cell, text='\u23f3', font=(FONTS['body'][0], 11),
+            icon = tk.Label(cell, text='◔', font=(FONTS['body'][0], 11),
                             bg=COLORS['bg_3'], fg=COLORS['fg_5'])
             icon.pack()
             txt = tk.Label(cell, text='%d. %s' % (i + 1, name),
@@ -1489,13 +1540,13 @@ def build_unibuild_tab(parent, app):
             if phase is not None:
                 for i, (icon, txt) in enumerate(phase_lbls):
                     if i < phase:
-                        icon.config(text='\u2714', fg=COLORS['teal'])
+                        icon.config(text='✓', fg=COLORS['teal'])
                         txt.config(fg=COLORS['fg_3'])
                     elif i == phase:
                         icon.config(text='\u25b6', fg=COLORS['teal'])
                         txt.config(fg=COLORS['fg_0'])
                     else:
-                        icon.config(text='\u23f3', fg=COLORS['fg_5'])
+                        icon.config(text='◔', fg=COLORS['fg_5'])
                         txt.config(fg=COLORS['fg_5'])
             if 'source' in t:
                 metric_vars['source'].set(t['source'] or '\u2014')
@@ -1632,7 +1683,7 @@ def build_unibuild_tab(parent, app):
             for v in metric_vars.values():
                 v.set('\u2014')
             for icon, txt in phase_lbls:
-                icon.config(text='\u23f3', fg=COLORS['fg_5'])
+                icon.config(text='◔', fg=COLORS['fg_5'])
                 txt.config(fg=COLORS['fg_5'])
     app._unified_status_card_show = _status_card_show
 
@@ -1693,7 +1744,8 @@ def build_unibuild_tab(parent, app):
         running = uq_state['running']
         n = len(queue)
         for idx, job in enumerate(queue):
-            editable = (job['status'] == 'queued' and not running)
+            editable = (job['status'] in ('queued', 'cancelled')
+                        and not running)
             row = tk.Frame(uq_list, bg=COLORS['bg_3'], highlightthickness=1,
                            highlightbackground=COLORS['border_3'])
             row.pack(fill='x', padx=6, pady=4)
@@ -1726,7 +1778,7 @@ def build_unibuild_tab(parent, app):
                          side='left', fill='x', expand=True)
             # action icons (only when editable)
             if editable:
-                trash = tk.Label(inner_r, text='\U0001f5d1', font=FONTS['meta'],
+                trash = tk.Label(inner_r, text='✕', font=FONTS['meta'],
                                  bg=COLORS['bg_3'], fg=COLORS['fg_5'], cursor='hand2')
                 trash.pack(side='right', padx=(8, 4))
                 trash.bind('<Button-1>', lambda e, j=job: _uq_remove_job(j))
@@ -1768,8 +1820,14 @@ def build_unibuild_tab(parent, app):
             messagebox.showerror('Source missing', 'Pick a valid game dump folder.')
             return
         if not outdir or not os.path.isdir(outdir):
-            messagebox.showerror('Output folder missing', 'Pick an output folder.')
-            return
+            # Open the picker straight away instead of rejecting the add.
+            picked = filedialog.askdirectory(
+                title='Select output folder',
+                initialdir=outdir if os.path.isdir(outdir) else None)
+            if not picked:
+                return
+            outdir = picked
+            outdir_var.set(outdir)
         if not _img_mode:
             try:
                 if os.path.commonpath([os.path.abspath(src),
@@ -1782,6 +1840,7 @@ def build_unibuild_tab(parent, app):
                     return
             except Exception:
                 pass
+        _remember_outdir(outdir)
         ext = _TYPE_EXT[t]
         if not name:
             name = os.path.basename(src.rstrip('/\\')) + ext
@@ -1838,6 +1897,7 @@ def build_unibuild_tab(parent, app):
             'from_image': _img_mode,
             'src_ext': os.path.splitext(src)[1].lower() if _img_mode else None,
             'exfat_size': exfat_size if t == 'exfat' else None,
+            'firmware': detected.get('firmware') or '',
             'status': 'queued',
             # space snapshot for the pre-build aggregate check
             'need_out': space_state.get('out_need', 0),
@@ -1929,6 +1989,11 @@ def build_unibuild_tab(parent, app):
                 b.config(state=st)
             except Exception:
                 pass
+        # Stop is the inverse: available only while a queue is running.
+        try:
+            btn_stop.config(state='disabled' if enabled else 'normal')
+        except Exception:
+            pass
 
     def _maybe_build_ampr_index(src_root, fmt_label=''):
         """v3.6.3: if the dump contains fakelib/libSceAmpr.sprx, generate an
@@ -2200,7 +2265,7 @@ def build_unibuild_tab(parent, app):
             # helper already logged exactly why) rather than midway.
             try:
                 app._set_status('PFS build aborted \u2014 not enough disk '
-                                'space (see log)', '#d9534f')
+                                'space (see log)', COLORS['danger'])
             except Exception:
                 pass
             cb(False)
@@ -2428,7 +2493,13 @@ def build_unibuild_tab(parent, app):
         job['_inter_size'] = src_size
 
         def _should_cancel():
-            return not uq_state.get('running', True)
+            try:
+                app_cancel = app._is_cancelled()
+            except Exception:
+                app_cancel = False
+            return (app_cancel
+                    or uq_state.get('cancelled', False)
+                    or not uq_state.get('running', True))
 
         def _finish_after_convert(stage_dir, produced_ffpfsc):
             def _after_convert():
@@ -2652,6 +2723,26 @@ def build_unibuild_tab(parent, app):
         else:
             cb(None)
 
+    def _uq_stop():
+        """Stop the unified queue without waiting for the current tool.
+
+        The active child process tree is killed by the supervisor; every
+        later stage checks the same cancellation event, so the queue winds
+        down promptly and the unfinished job stays queued for a retry.
+        """
+        if not uq_state.get('running'):
+            return
+        uq_state['cancelled'] = True
+        uq_status.set('Cancelling — stopping the active tool…')
+        try:
+            btn_stop.config(state='disabled')
+        except Exception:
+            pass
+        try:
+            app._request_cancel('unified queue')
+        except Exception:
+            pass
+
     def _uq_done(i, ok):
         job = queue[i]
         try:
@@ -2660,6 +2751,17 @@ def build_unibuild_tab(parent, app):
             pass
         if job['type'] != 'pfs' and 'out_path' not in job:
             job['out_path'] = os.path.join(job['outdir'], job['name'])
+        try:
+            cancelled = bool(uq_state.get('cancelled')
+                             or app._is_cancelled())
+        except Exception:
+            cancelled = bool(uq_state.get('cancelled'))
+        if cancelled:
+            job['status'] = 'cancelled'
+            app._unified_job_done = None
+            _uq_render()
+            _uq_finish()
+            return
         if ok is None:
             job['status'] = 'skipped'
         else:
@@ -2669,6 +2771,9 @@ def build_unibuild_tab(parent, app):
         parent.after(60, lambda: _uq_run_idx(i + 1))
 
     def _uq_run_idx(i):
+        if uq_state.get('cancelled'):
+            _uq_finish()
+            return
         if i >= len(queue):
             _uq_finish()
             return
@@ -2736,10 +2841,13 @@ def build_unibuild_tab(parent, app):
         done_jobs = [j for j in queue if j['status'] == 'done']
         done = len(done_jobs)
         failed = sum(1 for j in queue if j['status'] == 'failed')
+        cancelled = sum(1 for j in queue if j['status'] == 'cancelled')
         total_dur = sum(j.get('duration', 0) for j in queue)
 
         line = '%d job%s finished  \u00b7  %d failed' % (
             done, '' if done == 1 else 's', failed)
+        if cancelled:
+            line += '  \u00b7  %d cancelled' % cancelled
         if len(queue) > 1 and done_jobs:
             counts = {}
             for j in done_jobs:
@@ -2780,14 +2888,18 @@ def build_unibuild_tab(parent, app):
             fields.append(('SPACE SAVED', _fmt_b(saved_total)))
         _sum_render(fields)
 
-        if failed:
+        if cancelled:
+            sum_title_var.set('BUILD CANCELLED')
+            sum_icon.config(text='\u25a0', fg=COLORS['warn'])
+        elif failed:
             sum_title_var.set('BUILD FINISHED \u2014 %d ERROR%s'
                               % (failed, '' if failed == 1 else 'S'))
             sum_icon.config(text='\u26a0', fg=COLORS['warn'])
         else:
             sum_title_var.set('BUILD COMPLETE')
             sum_icon.config(text='\u2713', fg=COLORS['success'])
-        summary_card.config(highlightbackground=COLORS['success'] if not failed
+        summary_card.config(highlightbackground=COLORS['success']
+                            if (not failed and not cancelled)
                             else COLORS['warn'])
         summary_card.pack(fill='x', padx=24, pady=(0, 16))
 
@@ -2805,7 +2917,8 @@ def build_unibuild_tab(parent, app):
             messagebox.showwarning('Busy',
                 'A build is already running on another tab \u2014 let it finish first.')
             return
-        if not any(j['status'] in ('queued', 'failed', 'skipped') for j in queue):
+        if not any(j['status'] in ('queued', 'failed', 'skipped', 'cancelled')
+                   for j in queue):
             messagebox.showinfo('Build queue', 'Nothing left to build.')
             return
         # ── Aggregate disk-space check across the whole queue ──
@@ -2817,7 +2930,8 @@ def build_unibuild_tab(parent, app):
             import shutil as _sh
             per_drive = {}   # drive -> {'need': bytes, 'tmp_max': bytes, 'path': example}
             for j in queue:
-                if j['status'] not in ('queued', 'failed', 'skipped'):
+                if j['status'] not in ('queued', 'failed', 'skipped',
+                                       'cancelled'):
                     continue
                 od = (j.get('out_drive') or '').upper()
                 if od and j.get('need_out'):
@@ -2856,7 +2970,7 @@ def build_unibuild_tab(parent, app):
         except Exception:
             pass
         for j in queue:
-            if j['status'] in ('failed', 'skipped'):
+            if j['status'] in ('failed', 'skipped', 'cancelled'):
                 j['status'] = 'queued'
                 j.pop('duration', None)
         try:
@@ -2868,6 +2982,11 @@ def build_unibuild_tab(parent, app):
         except Exception:
             pass
         summary_card.pack_forget()
+        uq_state['cancelled'] = False
+        try:
+            app._reset_cancel_scope()
+        except Exception:
+            pass
         uq_state['running'] = True
         uq_state['added'] = []
         uq_state['added_ffpkg'] = []

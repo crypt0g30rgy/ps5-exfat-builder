@@ -15,13 +15,13 @@ import os
 import threading
 import tkinter as tk
 
-from tkinter_theme import COLORS, FONTS
+from tkinter_theme import COLORS, FONTS, set_scaled_font
 
 _BADGE = {
-    'ready':   (COLORS['success'], '#0a0a0a'),
+    'ready':   (COLORS['success'], COLORS['bg_0']),
     'wait':    (COLORS['bg_4'],    COLORS['fg_3']),
-    'busy':    (COLORS['accent'],  '#0a0a0a'),
-    'warn':    (COLORS['warn'],    '#0a0a0a'),
+    'busy':    (COLORS['accent'],  COLORS['fg_0']),
+    'warn':    (COLORS['warn'],    COLORS['bg_0']),
 }
 
 
@@ -31,7 +31,7 @@ class GameHero(tk.Frame):
     stats: ordered list of (label, key) pairs for the strip cells.
     """
 
-    def __init__(self, parent, stats, cover_glyph='\U0001f3ae',
+    def __init__(self, parent, stats, cover_glyph='\u25c9',
                  cover_size=150):
         super().__init__(parent, bg=COLORS['bg_2'],
                          highlightbackground=COLORS['border_2'],
@@ -100,7 +100,7 @@ class GameHero(tk.Frame):
             v = tk.StringVar(value='\u2014')
             val = tk.Label(cell, textvariable=v,
                            font=(FONTS['mono_sm'][0], 11, 'bold'),
-                           bg=COLORS['bg_2'], fg=COLORS['teal'], anchor='w')
+                           bg=COLORS['bg_2'], fg=COLORS['fg_0'], anchor='w')
             val.pack(anchor='w', pady=(2, 0))
             self._cells[key] = (v, val)
 
@@ -119,7 +119,7 @@ class GameHero(tk.Frame):
         v, val = cell
         v.set(value if value not in (None, '') else '\u2014')
         try:
-            val.config(fg=COLORS['warn'] if warn else COLORS['teal'])
+            val.config(fg=COLORS['warn'] if warn else COLORS['fg_0'])
         except Exception:
             pass
 
@@ -136,8 +136,8 @@ class GameHero(tk.Frame):
         self._cover_token += 1
         self._cover_img = None
         try:
-            self._cover_lbl.config(image='', text=self._cover_glyph,
-                                   font=('Segoe UI', 52))
+            self._cover_lbl.config(image='', text=self._cover_glyph)
+            set_scaled_font(self._cover_lbl, ('Segoe UI', 52))
         except Exception:
             pass
 

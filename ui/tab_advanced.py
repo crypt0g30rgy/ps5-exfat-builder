@@ -15,7 +15,7 @@ Replaces the flat-form layout with:
 Layout:
 
     [ page head: ⚙ Advanced  + "Power-user knobs — defaults are safe"  ]
-    [ sub-tab pills + ↻ Reset all + 💾 Save parameters                   ]
+    [ sub-tab pills + ↻ Reset all + ▣ Save parameters                   ]
     ┌─ body (grid: 1fr / 300px) ────────────────────────────────────────┐
     │ ┌── card grid (2x2) ───────┐ ┌── side rail ──┐                    │
     │ │ Filesystem layout │ Perf │ │ Recommended    │                    │
@@ -41,7 +41,7 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk
 
-from tkinter_theme import COLORS, FONTS
+from tkinter_theme import COLORS, FONTS, set_scaled_font
 
 from exfat_builder import *  # noqa: F401,F403
 from exfat_builder import _, save_settings, SubTabBar, Tooltip
@@ -263,9 +263,9 @@ def _build_subtab_bar(parent, app):
     app._adv_v2_tab_btns = {}     # key -> outer frame
     app._adv_v2_tab_counts = {}   # key -> count label (or None)
     tabs = [
-        ('params', '\U0001f527', _('Build Parameters')),
-        ('post',   '\U0001f680', _('Post-Build')),
-        ('lang',   '\U0001f310', _('Language Stripper')),
+        ('params', '⚙', _('Build Parameters')),
+        ('post',   '⇧', _('Post-Build')),
+        ('lang',   '◈', _('Language Stripper')),
     ]
     for key, icon, label in tabs:
         btn = _pill_tab(bar, key, icon, label, app)
@@ -279,7 +279,7 @@ def _build_subtab_bar(parent, app):
     reset_btn = _ghost_btn(bar, '\u21bb  ' + _('Reset all'),
         command=lambda: _reset_all(app))
     reset_btn.pack(side='left', padx=(0, 6))
-    save_btn = _accent_btn(bar, '\U0001f4be  ' + _('Save parameters'),
+    save_btn = _accent_btn(bar, '▣  ' + _('Save parameters'),
         command=lambda: _save_params(app))
     save_btn.pack(side='left')
 
@@ -303,7 +303,7 @@ def _pill_tab(parent, key, icon, label, app):
     # Counter badge (hidden by default)
     count = tk.Label(inner, text='',
                      font=(FONTS['mono_sm'][0], 8, 'bold'),
-                     bg=COLORS['warn'], fg='#1a0e00',
+                     bg=COLORS['warn'], fg=COLORS['bg_0'],
                      padx=5, pady=1)
     # NOT packed yet — _update_tab_count handles pack/forget
     app._adv_v2_tab_counts[key] = count
@@ -357,17 +357,14 @@ def _style_tab(btn, active):
     btn.configure(bg=bg, highlightbackground=border)
     btn._smp_inner.configure(bg=bg)
     btn._smp_ic.configure(bg=bg, fg=fg_ic)
-    fnt = btn._smp_lbl.cget('font')
-    if isinstance(fnt, str):
-        fnt_family = 'Segoe UI'
-        fnt_size = 10
-    else:
-        try:
-            fnt_family, fnt_size = fnt[0], fnt[1]
-        except Exception:
-            fnt_family, fnt_size = 'Segoe UI', 10
-    btn._smp_lbl.configure(bg=bg, fg=fg_lbl,
-                            font=(fnt_family, fnt_size, weight))
+    # Use the scaler's saved base rather than the current font: reading
+    # cget() after a resize would return the already-scaled point size and
+    # make the next resize scale it a second time.
+    base_font = getattr(btn._smp_lbl, '_ui_scale_font_base', None)
+    if not isinstance(base_font, (tuple, list)) or len(base_font) < 2:
+        base_font = ('Segoe UI', 10)
+    btn._smp_lbl.configure(bg=bg, fg=fg_lbl)
+    set_scaled_font(btn._smp_lbl, (base_font[0], base_font[1], weight))
 
 
 def _update_tab_count(app, key, count):
@@ -513,11 +510,11 @@ def _build_post_summary(parent, app):
                  bg=COLORS['bg_2'], fg=COLORS['fg_5']
                  ).pack(side='left', padx=6)
 
-    _chip('build', '\U0001f528', _('Build'))
+    _chip('build', '▦', _('Build'))
     _arrow()
-    _chip('verify', '\U0001f50d', _('Verify'))
+    _chip('verify', '⌕', _('Verify'))
     _arrow()
-    _chip('upload', '\U0001f4e1', _('Upload'))
+    _chip('upload', '◉', _('Upload'))
 
     def _sync(*_a):
         try:
@@ -582,7 +579,7 @@ def _post_card(parent, row, col, icon, title, desc, accent,
     if danger:
         tk.Label(trow, text=_('DESTRUCTIVE'),
                  font=(FONTS['mono_sm'][0], 7, 'bold'),
-                 bg=COLORS['danger'], fg='#000000',
+                 bg=COLORS['danger'], fg=COLORS['bg_0'],
                  padx=6, pady=1).pack(side='left', padx=(8, 0))
     tk.Label(tcol, text=desc, font=FONTS['mono_sm'],
              bg=hbg, fg=COLORS['fg_5'], anchor='w',
@@ -648,7 +645,7 @@ def _build_post_pane(parent, app):
     _build_post_summary(parent, app)
 
     # ── Upload ──
-    b = _post_card(parent, 1, 0, '\U0001f4e1', _('Upload'),
+    b = _post_card(parent, 1, 0, '◉', _('Upload'),
                    _('Push finished images to the PS5 automatically.'),
                    COLORS['accent'],
                    state_vars=[app._adv_auto_upload_var])
@@ -662,7 +659,7 @@ def _build_post_pane(parent, app):
         on_change=app._adv_save_post_build)
 
     # ── Verification ──
-    b = _post_card(parent, 1, 1, '\U0001f50d', _('Verification'),
+    b = _post_card(parent, 1, 1, '⌕', _('Verification'),
                    _('Integrity checks after every copy pass.'),
                    COLORS['teal'],
                    state_vars=[app._adv_checksum_var])
@@ -681,7 +678,7 @@ def _build_post_pane(parent, app):
     # consumed — no /LOG flag was ever passed to robocopy — so it was a
     # control that did nothing. The backing var is left defined elsewhere
     # for settings-compat; only the dead UI is gone.)
-    b = _post_card(parent, 2, 0, '\U0001f4bf', _('Image Output'),
+    b = _post_card(parent, 2, 0, '◉', _('Image Output'),
                    _('Override how the output image is sized.'),
                    COLORS['accent_hi'])
     _setting_row(b, app,
@@ -736,7 +733,7 @@ def _build_lang_pane(parent, app):
     # Card header
     head = tk.Frame(card_outer, bg=COLORS['bg_2'])
     head.pack(fill='x', padx=14, pady=(12, 4))
-    tk.Label(head, text='\U0001f310',
+    tk.Label(head, text='◈',
              font=('Segoe UI', 14),
              bg=COLORS['bg_2'], fg=COLORS['purple']
              ).pack(side='left', padx=(0, 8))
@@ -809,8 +806,8 @@ def _build_lang_pane(parent, app):
             f = (app._adv_lang_folder_var.get() or '').strip()
             if len(f) > 34:
                 f = '\u2026' + f[-32:]
-            c_folder.config(text=f or '\u2014',
-                            font=(FONTS['mono_sm'][0], 10, 'bold'))
+            c_folder.config(text=f or '\u2014')
+            set_scaled_font(c_folder, (FONTS['mono_sm'][0], 10, 'bold'))
         except Exception:
             pass
 
@@ -912,10 +909,10 @@ def _build_lang_pane(parent, app):
              insertbackground=COLORS['field_fg'],
              relief='flat', bd=4
              ).pack(fill='x')
-    _ghost_btn(folder_row, '\U0001f4c1  ' + _('Browse'),
+    _ghost_btn(folder_row, '▤  ' + _('Browse'),
         command=lambda: _lang_browse(app)
         ).pack(side='left', padx=(6, 0))
-    _accent_btn(folder_row, '\U0001f50d  ' + _('Scan'),
+    _accent_btn(folder_row, '⌕  ' + _('Scan'),
         command=lambda: _lang_scan(app)
         ).pack(side='left', padx=(6, 0))
 
@@ -991,7 +988,7 @@ def _build_lang_pane(parent, app):
         command=lambda: _lang_keep_none(app)
         ).pack(side='left')
     strip_btn = tk.Button(footer,
-        text='\U0001f5d1  ' + _('Strip Selected Languages'),
+        text='✕  ' + _('Strip Selected Languages'),
         font=(FONTS['button'][0], 11, 'bold'),
         bg=COLORS['danger'], fg=COLORS['fg_0'],
         activebackground=COLORS['danger_hi'],
@@ -1009,7 +1006,7 @@ def _show_lang_empty_state(app):
         w.destroy()
     inner = tk.Frame(frame, bg=COLORS['bg_3'])
     inner.pack(expand=True)
-    tk.Label(inner, text='\U0001f310',
+    tk.Label(inner, text='◈',
              font=('Segoe UI', 28),
              bg=COLORS['bg_3'], fg=COLORS['fg_6']
              ).pack(pady=(0, 6))
@@ -1164,7 +1161,7 @@ def _card_shell(parent, row, col, icon, title, subtitle):
 # ── Filesystem layout ────────────────────────────────────────────────
 def _build_card_fs(parent, app, row, col):
     body = _card_shell(parent, row, col,
-        '\U0001f9f1', _('Filesystem layout'),
+        '▣', _('Filesystem layout'),
         _('How exFAT and ffpkg lay out the image.'))
 
     _setting_row(body, app,
@@ -1192,7 +1189,7 @@ def _build_card_fs(parent, app, row, col):
 # ── Performance ──────────────────────────────────────────────────────
 def _build_card_perf(parent, app, row, col):
     body = _card_shell(parent, row, col,
-        '\u26a1', _('Performance'),
+        '◈', _('Performance'),
         _('Copy concurrency, retries, benchmark.'))
 
     # Recommended threads meta line — only if HW detected
@@ -1209,7 +1206,7 @@ def _build_card_perf(parent, app, row, col):
         kind='int',
         var=app._adv_threads_var,
         default='1',
-        help_text=_('1 = sequential \u2014 recommended, avoids fragmenting the image. Higher copies faster but fragments output.'),
+        help_text=_('1 = sequential \u2014 recommended, avoids fragmenting the image. Higher copies faster but fragments output. Enter auto to detect the source media and CPU count.'),
         meta=meta)
 
     _setting_row(body, app,
@@ -1291,7 +1288,7 @@ def _build_card_image(parent, app, row, col):
 # ── ffpkg parameters ─────────────────────────────────────────────────
 def _build_card_ffpkg(parent, app, row, col):
     body = _card_shell(parent, row, col,
-        '\U0001f4e6', _('ffpkg parameters'),
+        '▣', _('ffpkg parameters'),
         _('UFS2Tool newfs settings.'))
 
     _setting_row(body, app,
@@ -1390,7 +1387,7 @@ def _setting_row(parent, app, label, kind, var=None,
                  anchor='w', justify='left', wraplength=340
                  ).pack(anchor='w', pady=(3, 0))
     if meta:
-        tk.Label(lcol, text='\U0001f4a1  ' + meta,
+        tk.Label(lcol, text='○  ' + meta,
                  font=(FONTS['mono_sm'][0], 9),
                  bg=COLORS['bg_2'], fg=COLORS['accent_hi'],
                  anchor='w').pack(anchor='w', pady=(2, 0))
@@ -1465,7 +1462,7 @@ def _setting_row(parent, app, label, kind, var=None,
         pill = tk.Label(ctrl_col,
                         text='ON' if is_on else 'OFF',
                         bg=COLORS['success'] if is_on else COLORS['bg_5'],
-                        fg='#000000' if is_on else COLORS['fg_5'],
+                        fg=COLORS['bg_0'] if is_on else COLORS['fg_5'],
                         font=(FONTS['mono_sm'][0], 9, 'bold'),
                         padx=10, pady=2,
                         width=3, anchor='center',
@@ -1474,7 +1471,7 @@ def _setting_row(parent, app, label, kind, var=None,
         def _paint(on):
             pill.config(text='ON' if on else 'OFF',
                         bg=COLORS['success'] if on else COLORS['bg_5'],
-                        fg='#000000' if on else COLORS['fg_5'])
+                        fg=COLORS['bg_0'] if on else COLORS['fg_5'])
             try:
                 status_lbl.config(
                     text=('\u2713 ' + _('Enabled')) if on
@@ -1503,7 +1500,7 @@ def _setting_row(parent, app, label, kind, var=None,
         ctrl_widget = pill
 
     elif kind == 'locked':
-        # Read-only field + 🔒 pill
+        # Read-only field + ■ pill
         ef = tk.Frame(ctrl_col, bg=COLORS['field_bg'],
                       highlightbackground=COLORS['border_3'],
                       highlightthickness=1)
@@ -1513,7 +1510,7 @@ def _setting_row(parent, app, label, kind, var=None,
                  font=(FONTS['mono_sm'][0], 10),
                  padx=8, pady=3, width=8, anchor='w'
                  ).pack()
-        lock_pill = tk.Label(ctrl_col, text='\U0001f512',
+        lock_pill = tk.Label(ctrl_col, text='■',
                               font=('Segoe UI', 10),
                               bg=COLORS['bg_2'], fg=COLORS['warn'])
         lock_pill.pack(side='left', padx=(6, 0))
@@ -1694,7 +1691,7 @@ def _build_recco_card(parent, app):
     # Header
     head = tk.Frame(inner, bg=COLORS['accent_08'])
     head.pack(fill='x')
-    tk.Label(head, text='\U0001f4a1',
+    tk.Label(head, text='○',
              font=('Segoe UI', 14),
              bg=COLORS['accent_08'], fg=COLORS['accent_hi']
              ).pack(side='left', padx=(0, 8))
@@ -1778,7 +1775,7 @@ def _build_recco_card(parent, app):
             except Exception:
                 pass
         _accent_btn(inner,
-            '\u26a1  ' + _('Apply recommended'),
+            '◈  ' + _('Apply recommended'),
             command=_apply_reco
             ).pack(fill='x', pady=(0, 0))
 

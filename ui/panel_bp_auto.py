@@ -3,7 +3,7 @@ ui/panel_bp_auto.py — Auto Backport form panel.
 
 Step 7 (v2.0.9): full refactor against backports-tab-redesign-standalone.html.
 
-This is the right-pane "⚡ Auto Backport" content that lives inside the
+This is the right-pane "◈ Auto Backport" content that lives inside the
 Backports tab. The previous version (`App._build_bp_auto_panel`) was 271
 lines of hex-literal-heavy widget code in the main file; this module
 replaces it with a design-system-styled equivalent.
@@ -131,7 +131,7 @@ def _build_selected_banner(parent, app):
                            ('Target Firmware', 'fw'),
                            ('Patches', 'patches'),
                            ('Status', 'status')],
-                    cover_glyph='\U0001f3ae', cover_size=130)
+                    cover_glyph='◉', cover_size=130)
     # Not packed here — update_selected_banner() shows it.
     hero.set_badge('NO GAME SELECTED', 'wait')
     hero.set_stat('status', 'Waiting')
@@ -231,8 +231,8 @@ def update_selected_banner(app, game):
 # Description card — purple-tinted intro
 # ─────────────────────────────────────────────────────────────────────────
 def _build_description_card(parent, app):
-    bg = '#0a0816'  # very dark purple-tinted
-    border = '#2a1a3e'
+    bg = COLORS['bg_2']
+    border = COLORS['border_3']
     desc = tk.Frame(parent, bg=bg,
                     highlightbackground=border, highlightthickness=1)
     desc.pack(fill='x', pady=(0, 12))
@@ -240,7 +240,7 @@ def _build_description_card(parent, app):
     inner = tk.Frame(desc, bg=bg)
     inner.pack(fill='x', padx=14, pady=10)
 
-    tk.Label(inner, text='\u26a1  Auto Backport',
+    tk.Label(inner, text='◈  Auto Backport',
              font=(FONTS['h3'][0], 11, 'bold'),
              bg=bg, fg=COLORS['purple'],
              anchor='w'
@@ -271,7 +271,7 @@ def _build_game_folder_field(parent, app):
                command=app._abp_browse_game
                ).pack(side='left', padx=(6, 0))
 
-    _ghost_btn(row, '\U0001f50d  ' + _('Auto-detect SDK'),
+    _ghost_btn(row, '⌕  ' + _('Auto-detect SDK'),
                command=app._abp_detect_sdk
                ).pack(side='left', padx=(6, 0))
 
@@ -336,7 +336,7 @@ def _build_detected_strip(parent, app):
     # out of the message and update the new card vars. Step 38 (v2.5.2):
     # rewrote regexes to match the ACTUAL message shape produced by
     # _abp_detect_sdk in exfat_builder.py:
-    #   "🔍  Requires FW 9.xx+ — Recommended backport target: SDK 9 or lower"
+    #   "⌕  Requires FW 9.xx+ — Recommended backport target: SDK 9 or lower"
     # The previous regexes (`SDK \d+\.\d+` and `FW \d+\.\d+`) expected
     # decimals like "SDK 9.00" / "FW 4.51" that are never produced — so
     # the card permanently displayed the initial "4.51" default.
@@ -489,7 +489,7 @@ def _build_action_row(parent, app):
     row.pack(fill='x', pady=(4, 8))
 
     app._abp_btn = tk.Button(row,
-                             text='\u26a1  ' + _('Apply Auto Backport'),
+                             text='◈  ' + _('Apply Auto Backport'),
                              font=(FONTS['button'][0], 11, 'bold'),
                              bg=COLORS['purple'], fg=COLORS['fg_0'],
                              activebackground=COLORS['purple_hi'],

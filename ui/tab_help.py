@@ -37,7 +37,7 @@ def build_help_tab(parent, app):
     head = tk.Frame(parent, bg=COLORS['bg_1'])
     head.pack(fill='x', padx=24, pady=(14, 12))
 
-    tk.Label(head, text='\u2753  ' + _('Help & Tutorial'),
+    tk.Label(head, text='?  ' + _('Help & Tutorial'),
              font=(FONTS['h2'][0], 14, 'bold'),
              bg=COLORS['bg_1'], fg=COLORS['fg_0']
              ).pack(side='left')
@@ -55,13 +55,13 @@ def build_help_tab(parent, app):
     toolbar = tk.Frame(parent, bg=COLORS['bg_1'])
     toolbar.pack(fill='x', padx=24, pady=(0, 10))
 
-    _ghost_btn(toolbar, '\U0001f4c4  ' + _('Open in browser'),
+    _ghost_btn(toolbar, '≣  ' + _('Open in browser'),
                command=app._help_open_browser
                ).pack(side='left')
     _ghost_btn(toolbar, '\u21bb  ' + _('Check for updated tutorial'),
                command=app._help_fetch_latest
                ).pack(side='left', padx=(6, 0))
-    _ghost_btn(toolbar, '\u2328  ' + _('Keyboard shortcuts'),
+    _ghost_btn(toolbar, '  ' + _('Keyboard shortcuts'),
                command=app._show_keyboard_shortcuts
                ).pack(side='left', padx=(6, 0))
 

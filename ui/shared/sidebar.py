@@ -23,7 +23,7 @@ import tkinter as tk
 
 from tkinter_theme import (
     COLORS, FONTS, SPACING,
-    get_color, get_font,
+    get_color, get_font, set_scaled_dimension, set_scaled_font,
 )
 
 
@@ -34,7 +34,7 @@ class NavItem(tk.Frame):
         parent   : container widget
         key      : string id passed back through on_select
         label    : visible text
-        icon     : optional leading glyph (str), e.g. an emoji
+        icon     : optional leading monochrome glyph (str), never an emoji
         on_select: callable(key) invoked on click — optional. If None,
                    the item is purely visual (no fake behavior).
 
@@ -147,7 +147,8 @@ class NavItem(tk.Frame):
         self._bar.configure(bg=bar)
         for w in (self, self._inner, self._label):
             w.configure(bg=bg)
-        self._label.configure(fg=fg, font=font)
+        self._label.configure(fg=fg)
+        set_scaled_font(self._label, font)
         if self._icon:
             self._icon.configure(bg=bg, fg=icon_fg)
 
@@ -176,9 +177,9 @@ class Sidebar(tk.Frame):
         sb.on_select = app._switch_tab          # real callback
         sb.add_group("WORKSPACE")
         sb.add_item("dashboard", "Dashboard", icon="\u25a3")
-        sb.add_item("quickstart", "Quick Start", icon="\u26a1")
+        sb.add_item("quickstart", "Quick Start", icon="\u25c8")
         sb.add_group("MAIN TOOLS")
-        sb.add_item("build", "Build Image", icon="\U0001f528")
+        sb.add_item("build", "Build Image", icon="\u25a3")
         sb.select("dashboard")
         footer = sb.footer()                    # pinned bottom area
         ...populate footer...
@@ -327,7 +328,7 @@ class Sidebar(tk.Frame):
         """Apply the current collapsed state: width, item labels, group
         headers/dividers, footer visibility, toggle glyph. Visual only."""
         if self._collapsed:
-            self.configure(width=self._rail_width)
+            set_scaled_dimension(self, 'width', self._rail_width)
             for item in self._items.values():
                 item.set_compact(True)
             # Hide group headers + dividers (grouping implied by gaps).
@@ -343,7 +344,7 @@ class Sidebar(tk.Frame):
                 pass
             self._toggle.configure(text="\u203a\u203a", anchor="center")  # ››
         else:
-            self.configure(width=self._full_width)
+            set_scaled_dimension(self, 'width', self._full_width)
             for item in self._items.values():
                 item.set_compact(False)
             # Re-show headers/dividers in original order is non-trivial via
@@ -404,12 +405,12 @@ if __name__ == "__main__":
 
     sb.add_group("Workspace")
     sb.add_item("dashboard", "Dashboard", icon="\u25a3")
-    sb.add_item("quickstart", "Quick Start", icon="\u26a1")
+    sb.add_item("quickstart", "Quick Start", icon="\u25c8")
     sb.add_group("Main Tools")
-    sb.add_item("build", "Build Image", icon="\U0001f528")
-    sb.add_item("library", "Game Library", icon="\U0001f4da")
+    sb.add_item("build", "Build Image", icon="\u25a3")
+    sb.add_item("library", "Game Library", icon="\u25a4")
     sb.add_group("Advanced")
-    sb.add_item("advanced", "Advanced Options", icon="\u2699")
+    sb.add_item("advanced", "Advanced Options", icon="\u25a7")
     sb.select("dashboard")
 
     tk.Label(sb.footer(), text="System: Healthy",

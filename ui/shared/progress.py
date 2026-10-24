@@ -75,9 +75,8 @@ class StagedProgressBar(tk.Frame):
             self._tiles.append(tile)
 
         # ── Progress bar ──
-        # Canvas-based so we can do a simple gradient fill (left=accent,
-        # right=success). tkinter doesn't render true CSS gradients; we fake
-        # it with two overlaid rectangles whose widths track progress.
+        # Flat accent fill on a neutral track. The design system explicitly
+        # avoids gradients, so a single rectangle carries the state.
         bar_outer = tk.Frame(self, bg=COLORS['bg_4'], height=10,
                              highlightthickness=0)
         bar_outer.pack(fill='x')
@@ -86,9 +85,7 @@ class StagedProgressBar(tk.Frame):
                                     bg=COLORS['bg_4'],
                                     highlightthickness=0, bd=0)
         self.bar_canvas.pack(fill='both', expand=True)
-        # Two rectangles — one for the accent gradient body, one for the
-        # success-tinted leading edge that grows as progress nears 100%.
-        # Simple approximation of the design's accent→success gradient.
+        # One rectangle: accent while running, success at 100%.
         self.bar_rect = self.bar_canvas.create_rectangle(
             0, 0, 0, 10, fill=COLORS['accent'], outline='')
         self.bar_canvas.bind('<Configure>', self._on_bar_resize)
@@ -189,8 +186,6 @@ class StagedProgressBar(tk.Frame):
         fill_w = int(self._bar_width * self._current_pct / 100)
         self.bar_canvas.coords(self.bar_rect, 0, 0, fill_w, 10)
         # Switch fill to success when complete, otherwise stay accent.
-        # (The mock uses an accent→success gradient; tk's flat fill is the
-        # closest non-image approximation without going full-canvas-stripes.)
         self.bar_canvas.itemconfig(
             self.bar_rect,
             fill=COLORS['success'] if self._current_pct >= 100

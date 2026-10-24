@@ -34,7 +34,7 @@ def make_themed_button(parent, text, command, kind='primary',
     """Build a tk.Button styled like the design-system btn-* classes.
 
     `kind` values:
-        'primary'      — accent (purple) fill, white text. Use for the
+        'primary'      — primary blue fill, white text. Use for the
                          main call-to-action on a page (Add to Queue,
                          Scan, Apply, etc).
         'success'      — muted teal fill, white text. Use for secondary
@@ -52,17 +52,18 @@ def make_themed_button(parent, text, command, kind='primary',
     schemes = {
         'primary':      (COLORS['accent'],  COLORS['fg_0'],
                          COLORS['accent_hi'], COLORS['fg_0']),
-        # 'success' is the secondary action colour — muted teal that
-        # sits next to the brand purple without clashing. Replaces the
-        # old bright mint that looked like a stoplight.
+        # 'success' is the secondary action colour — the lighter
+        # PlayStation blue, used for forward actions next to the primary
+        # blue CTA. Replaces the old bright mint that looked like a
+        # stoplight.
         'success':      (COLORS['teal'],    COLORS['fg_0'],
                          COLORS['teal_hi'], COLORS['fg_0']),
         # Genuine "done" green — kept for any future status buttons
         # that need the mint colour, but not used for actions.
         'success_done': (COLORS['success'], COLORS['fg_0'],
                          COLORS['success_hi'], COLORS['fg_0']),
-        'warn':         (COLORS['warn'],    '#1a0e00',
-                         COLORS['warn_hi'], '#1a0e00'),
+        'warn':         (COLORS['warn'],    COLORS['bg_0'],
+                         COLORS['warn_hi'], COLORS['bg_0']),
         'danger':       (COLORS['danger'],  COLORS['fg_0'],
                          COLORS['danger_hi'], COLORS['fg_0']),
         'ghost':        (COLORS['bg_2'],    COLORS['fg_3'],
@@ -116,21 +117,20 @@ def info_banner(parent, text, on_click=None):
     return bar
 
 
-def page_head(parent, badge_emoji, title_text, subtitle_text):
-    """Top-of-page header with a gradient-ish badge tile + title + subtitle.
+def page_head(parent, badge_emoji=None, title_text='', subtitle_text=''):
+    """Top-of-page header: slim blue rule + title + subtitle.
 
-    Pack with `pady=(14, 12)` for the Build-tab standard spacing.
+    `badge_emoji` is accepted for call-site compatibility and ignored.
+    The redesigned shell uses a single blue rule instead of per-page emoji
+    tiles, so every page shares the same quiet navigation language.
+
+    Pack with `pady=(14, 12)` for the standard page spacing.
     """
     bg = COLORS['bg_1']
     head = tk.Frame(parent, bg=bg)
 
-    badge = tk.Label(head, text=badge_emoji,
-                     bg=COLORS['accent'], fg=COLORS['fg_0'],
-                     font=(FONTS['body'][0], 18, 'bold'),
-                     width=3, height=2, padx=4, pady=0,
-                     highlightbackground=COLORS['accent_pressed'],
-                     highlightthickness=1)
-    badge.pack(side='left', padx=(0, 14))
+    rule = tk.Frame(head, bg=COLORS['accent'], width=3, height=44)
+    rule.pack(side='left', fill='y', padx=(0, 14))
 
     text_col = tk.Frame(head, bg=bg)
     text_col.pack(side='left', fill='x', expand=True)

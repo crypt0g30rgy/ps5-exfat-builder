@@ -74,17 +74,17 @@ def build_home_tab(parent, app):
 
     # (registry key, icon, title, description). Routes are existing keys.
     cards = [
-        ('unibuild', '\U0001f6e0', _('Build Image'),
+        ('unibuild', '\u25a3', _('Build Image'),
          _('Create a new image from a game folder.')),
-        ('extract',  '\U0001f4e4', _('Extract Image'),
+        ('extract',  '\u21e7', _('Extract Image'),
          _('Unpack an image back into files and folders.')),
-        ('convert',  '\U0001f504', _('Convert Image'),
+        ('convert',  '\u21c4', _('Convert Image'),
          _('Change an existing image between exFAT and ffpkg.')),
-        ('ps5',      '\U0001f3ae', _('PS5 Tools'),
+        ('ps5',      '\u25c9', _('PS5 Tools'),
          _('Connect to your PS5: transfer, payloads, kernel log.')),
-        ('library',  '\U0001f4da', _('Library'),
+        ('library',  '\u25a4', _('Library'),
          _('Browse and manage your local game images.')),
-        ('report',   '\U0001f41e', _('Report Issue'),
+        ('report',   '\u25b3', _('Report Issue'),
          _('Report a problem or get help.')),
     ]
 

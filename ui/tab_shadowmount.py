@@ -268,13 +268,13 @@ def build_shadowmount_tab(parent, app):
 # header icon swatch.
 # ════════════════════════════════════════════════════════════════════
 _SECTIONS = [
-    ('kstuff',    '\u23f8', 'Kstuff pause',        'delays around game exec/exit',           6, 'purple'),
-    ('mount',     '\U0001f4be', 'Mount options',  'read-only, backends, install flow',       5, 'accent'),
-    ('scan',      '\U0001f50d', 'Scanning',       'where ShadowMount+ looks, how often',     4, 'accent'),
-    ('fakelib',   '\U0001f4e6', 'Fakelib overlays','sandbox library injection',              5, 'purple'),
-    ('per_image', '\U0001f4d0', 'Per-image overrides','force RO/RW or sector size by file', 1, 'warn'),
+    ('kstuff',    '‖', 'Kstuff pause',        'delays around game exec/exit',           6, 'purple'),
+    ('mount',     '▣', 'Mount options',  'read-only, backends, install flow',       5, 'accent'),
+    ('scan',      '⌕', 'Scanning',       'where ShadowMount+ looks, how often',     4, 'accent'),
+    ('fakelib',   '▣', 'Fakelib overlays','sandbox library injection',              5, 'purple'),
+    ('per_image', '▧', 'Per-image overrides','force RO/RW or sector size by file', 1, 'warn'),
     ('advanced',  '\u2699',  'Advanced',          'logging, sector sizes',                   7, 'fg_4'),
-    ('payload',   '\U0001f4e1', 'Payload',        'send shadowmountplus.elf · TCP 9021',     2, 'purple'),
+    ('payload',   '◉', 'Payload',        'send shadowmountplus.elf · TCP 9021',     2, 'purple'),
 ]
 
 
@@ -349,7 +349,7 @@ def _build_toolbar(parent, app):
                ('Rules', 'rules'),
                ('TCP Port', 'port'),
                ('Status', 'status')],
-        icon='\u26a1', icon_size=64)
+        icon='◈', icon_size=64)
     hero.pack(fill='x')
     app._smp_hero = hero
 
@@ -419,18 +419,18 @@ def _build_toolbar(parent, app):
     # ── Actions row ──
     actions = hero.actions_row()
 
-    make_themed_button(actions, '\U0001f4e5  Load from PS5',
+    make_themed_button(actions, '⇩  Load from PS5',
                        command=lambda: _load_from_ps5(app), kind='primary',
                        font_size=9, padx=12, pady=6).pack(side='left')
-    make_themed_button(actions, '\U0001f4dd  Fetch log',
+    make_themed_button(actions, '✎  Fetch log',
                        command=lambda: _fetch_debug_log(app), kind='ghost',
                        font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(6, 0))
-    make_themed_button(actions, '\u26a1  Send Payload',
+    make_themed_button(actions, '◈  Send Payload',
                        command=lambda: _send_payload(app), kind='success',
                        font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(6, 0))
-    make_themed_button(actions, '\u23cf  Safe to unplug',
+    make_themed_button(actions, '✕  Safe to unplug',
                        command=lambda: _stop_shadowmount(app), kind='ghost',
                        font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(6, 0))
@@ -463,11 +463,11 @@ def _toolbar_btn(parent, text, cmd, kind='default'):
     bg = _BG_CARD_HEAD
     fg = _FG
     if kind == 'primary':
-        bg, fg = _PURPLE, '#ffffff'
+        bg, fg = _PURPLE, COLORS['fg_0']
     elif kind == 'warn':
-        bg, fg = _WARN, '#000000'
+        bg, fg = _WARN, COLORS['bg_0']
     elif kind == 'success':
-        bg, fg = _SUCCESS, '#ffffff'
+        bg, fg = _SUCCESS, COLORS['bg_0']
     elif kind == 'ghost':
         bg, fg = _BG_TOOLBAR, _FG_MUTED
     return tk.Button(parent, text=text, command=cmd,
@@ -494,7 +494,7 @@ def _build_rail(parent, app):
     search_entry.pack(fill='x', ipady=4, ipadx=8)
     # Placeholder text (Tk lacks native placeholder; use a focus trick)
     _install_placeholder(search_entry, app._smp_search_var,
-                         '\U0001f50d  Filter settings\u2026')
+                         '⌕  Filter settings\u2026')
 
     # Live filter on every keystroke
     def _on_search_change(*_):
@@ -522,7 +522,7 @@ def _build_rail(parent, app):
              anchor='w').pack(fill='x', padx=14, pady=(14, 4))
 
     # Section list — Overview dashboard row first (v3.6.0 pass)
-    ov_row = _make_rail_row(parent, app, 'overview', '\U0001f3e0',
+    ov_row = _make_rail_row(parent, app, 'overview', '⌂',
                             'Overview', len(_SECTIONS))
     app._smp_rail_rows['overview'] = ov_row
     for key, icon, label, _sub, count, _accent in _SECTIONS:
@@ -784,7 +784,7 @@ def _build_overview_card(parent, app):
     head.pack(fill='x')
     hi = tk.Frame(head, bg=_BG_CARD_HEAD)
     hi.pack(fill='x', padx=14, pady=10)
-    tk.Label(hi, text='\U0001f3e0', bg=_BG_CARD_HEAD, fg=_PURPLE,
+    tk.Label(hi, text='⌂', bg=_BG_CARD_HEAD, fg=_PURPLE,
              font=_F_BODY).pack(side='left')
     tk.Label(hi, text='Overview', bg=_BG_CARD_HEAD, fg=_FG,
              font=_F_H3).pack(side='left', padx=(10, 0))
@@ -1477,7 +1477,7 @@ def _build_payload_section(parent, app):
                 _on_smp_change(app, 'smp_payload_path', p)
             except Exception:
                 pass
-    tk.Button(browse_row, text='\U0001f4c2  Browse\u2026',
+    tk.Button(browse_row, text='▤  Browse\u2026',
               command=_browse_elf,
               bg=_BG_CARD_HEAD, fg=_FG, font=_F_BUTTON,
               activebackground=_BG_ROW_HOV, activeforeground=_FG,
@@ -2064,7 +2064,7 @@ class SettingRow:
         # Filled green rectangle with "ON" when active, dark grey with
         # "OFF" when inactive. Danger toggles flip green → red.
         self._toggle_pill = tk.Label(cell, text='ON',
-                                      bg=_SUCCESS, fg='#000000',
+                                      bg=_SUCCESS, fg=COLORS['bg_0'],
                                       font=_F_MONO,
                                       padx=10, pady=2,
                                       cursor='hand2',
@@ -2086,7 +2086,7 @@ class SettingRow:
         on = bool(self._tk_var.get())
         if on:
             bg = _DANGER if self._danger else _SUCCESS
-            fg = '#ffffff' if self._danger else '#000000'
+            fg = COLORS['fg_0'] if self._danger else COLORS['bg_0']
             text = 'ON'
         else:
             bg = _BG_CARD_HEAD
@@ -2168,7 +2168,7 @@ class SettingRow:
         menu = tk.Menu(mb, tearoff=0,
                        bg=COLORS['bg_3'], fg=_FG,
                        activebackground=_PURPLE,
-                       activeforeground='#ffffff',
+                       activeforeground=COLORS['fg_0'],
                        bd=0, font=_F_MONO)
         for choice in choices:
             def _pick(v=choice):

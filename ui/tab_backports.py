@@ -4,7 +4,7 @@ ui/tab_backports.py — Backports tab (v3: sub-tabs Games / Auto / Results).
 Structure:
 
     ┌─ Sub-tab strip ───────────────────────────────────────┐
-    │ [🎮 Games]  [⚙ Auto Backport]  [📋 Results]            │
+    │ [◉ Games]  [⚙ Auto Backport]  [≣ Results]            │
     ├───────────────────────────────────────────────────────┤
     │                                                       │
     │   Active sub-tab content here                         │
@@ -24,7 +24,7 @@ Sub-tab 2 — Auto Backport
     bottom of the window (click it to expand).
 
 Sub-tab 3 — Results
-    ✅ worked / ❌ didn't work tracking — built by `_build_bpr_panel`.
+    ✓ worked / ✗ didn't work tracking — built by `_build_bpr_panel`.
 
 Backwards compat: every `_bp_*` attribute the rest of exfat_builder.py
 expects is constructed (form pane, results pane, switch helpers, scan
@@ -96,11 +96,11 @@ def build_backports_tab(parent, app):
 
     # ── Sub-tabs ──
     items = [
-        ('games',   '\U0001f3ae  ' + _('Games'),
+        ('games',   '◉  ' + _('Games'),
             lambda f: _build_games_subtab(f, app)),
         ('auto',    '\u2699  ' + _('Auto Backport'),
             lambda f: _build_auto_subtab(f, app)),
-        ('results', '\U0001f4cb  ' + _('Results'),
+        ('results', '≣  ' + _('Results'),
             lambda f: _build_results_subtab(f, app)),
     ]
     app._bp_subtab_activate = build_subtabs(parent, items, default='games')
@@ -170,7 +170,7 @@ def _build_games_head(body, app):
     head = tk.Frame(body, bg=COLORS['bg_1'])
     head.pack(fill='x', padx=24, pady=(14, 12))
 
-    tk.Label(head, text='\u26a1  ' + _('Backports'),
+    tk.Label(head, text='◈  ' + _('Backports'),
              font=(FONTS['h2'][0], 14, 'bold'),
              bg=COLORS['bg_1'], fg=COLORS['fg_0']
              ).pack(side='left')
@@ -205,8 +205,8 @@ def _build_games_head(body, app):
 def _process_label(app):
     n = len(app._bp_queue)
     if n == 0:
-        return '\u26a1  ' + _('Process queue')
-    return '\u26a1  ' + _('Process queue (%d)') % n
+        return '◈  ' + _('Process queue')
+    return '◈  ' + _('Process queue (%d)') % n
 
 
 # ── Toolbar: search + filter pills + status ──
@@ -223,7 +223,7 @@ def _build_games_toolbar(body, app):
                   highlightbackground=COLORS['border_3'],
                   highlightthickness=1)
     sw.pack(side='left')
-    tk.Label(sw, text='\U0001f50d',
+    tk.Label(sw, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_0'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(8, 4))
@@ -271,10 +271,10 @@ def _paint_filter_pills(app):
         if not _widget_alive(pill):
             continue
         if key == active:
-            pill.configure(bg=COLORS.get('accent_lo', '#1a1024'),
-                           fg=COLORS.get('purple_hi', '#c891e0'),
+            pill.configure(bg=COLORS.get('accent_lo', '#0B2A47'),
+                           fg=COLORS.get('purple_hi', '#2EA3FF'),
                            highlightbackground=COLORS.get('purple',
-                                                          '#9b59b6'))
+                                                          '#1685E5'))
         else:
             pill.configure(bg=COLORS['bg_3'], fg=COLORS['fg_3'],
                            highlightbackground=COLORS['border_3'])
@@ -308,7 +308,7 @@ def _refresh_folder_chips(app):
                         highlightbackground=COLORS['border_2'],
                         highlightthickness=1)
         chip.pack(side='left', padx=(0, 6), pady=4)
-        tk.Label(chip, text='\U0001f4c1  ' + folder,
+        tk.Label(chip, text='▤  ' + folder,
                  font=FONTS['mono_sm'],
                  bg=COLORS['bg_2'], fg=COLORS['fg_2'],
                  padx=8, pady=4
@@ -392,7 +392,7 @@ def _build_auto_subtab(parent, app):
                  text=_('Could not load Auto Backport form:') +
                       '\n\n' + str(e),
                  font=FONTS['mono_sm'],
-                 bg=COLORS['bg_1'], fg=COLORS.get('err', '#e0584b'),
+                 bg=COLORS['bg_1'], fg=COLORS.get('err', '#F16C75'),
                  wraplength=720, justify='left'
                  ).pack(padx=24, pady=24, anchor='nw')
 
@@ -425,7 +425,7 @@ def _build_auto_subtab(parent, app):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# SUB-TAB 3: RESULTS — ✅/❌ tracking pane (existing builder)
+# SUB-TAB 3: RESULTS — ✓/✗ tracking pane (existing builder)
 # ─────────────────────────────────────────────────────────────────────────
 def _build_results_subtab(parent, app):
     parent.configure(bg=COLORS['bg_1'])
@@ -438,7 +438,7 @@ def _build_results_subtab(parent, app):
                  text=_('Could not load Results pane:') +
                       '\n\n' + str(e),
                  font=FONTS['mono_sm'],
-                 bg=COLORS['bg_1'], fg=COLORS.get('err', '#e0584b'),
+                 bg=COLORS['bg_1'], fg=COLORS.get('err', '#F16C75'),
                  wraplength=720, justify='left'
                  ).pack(padx=24, pady=24, anchor='nw')
 
@@ -785,10 +785,10 @@ def _make_card(app, parent, game, row, col, queued):
     if queued:
         qbtn = tk.Button(arow, text='\u2713  ' + _('Queued'),
                          font=(FONTS['button'][0], 9, 'bold'),
-                         bg=COLORS.get('purple', '#9b59b6'),
+                         bg=COLORS.get('purple', '#1685E5'),
                          fg=COLORS['fg_0'],
                          activebackground=COLORS.get('purple_hi',
-                                                     '#c891e0'),
+                                                     '#2EA3FF'),
                          activeforeground=COLORS['fg_0'],
                          relief='flat', bd=0, padx=12, pady=5,
                          cursor='hand2',
@@ -805,23 +805,23 @@ def _make_card(app, parent, game, row, col, queued):
                          highlightthickness=1,
                          command=lambda g=game: _toggle_queue(app, g))
     qbtn.pack(side='left')
-    tk.Button(arow, text='\u26a1  ' + _('Process'),
+    tk.Button(arow, text='◈  ' + _('Process'),
               font=(FONTS['button'][0], 9, 'bold'),
               bg=COLORS['bg_3'],
-              fg=COLORS.get('purple_hi', '#c891e0'),
+              fg=COLORS.get('purple_hi', '#2EA3FF'),
               activebackground=COLORS['bg_4'],
-              activeforeground=COLORS.get('purple_hi', '#c891e0'),
+              activeforeground=COLORS.get('purple_hi', '#2EA3FF'),
               relief='flat', bd=0, padx=12, pady=5,
               cursor='hand2',
-              highlightbackground=COLORS.get('purple', '#9b59b6'),
+              highlightbackground=COLORS.get('purple', '#1685E5'),
               highlightthickness=1,
               command=lambda g=game: _process_single(app, g)
               ).pack(side='left', padx=(6, 0))
 
     if queued:
         try:
-            purple = COLORS.get('purple', '#9b59b6')
-            purple_hi = COLORS.get('purple_hi', '#c891e0')
+            purple = COLORS.get('purple', '#1685E5')
+            purple_hi = COLORS.get('purple_hi', '#2EA3FF')
             card.configure(highlightbackground=purple,
                            highlightthickness=2)
             card._idle_border = purple
@@ -834,7 +834,7 @@ def _make_card(app, parent, game, row, col, queued):
                 cover_frame,
                 text=' \u2713 ' + _('Queued') + ' ',
                 font=(FONTS['mono_sm'][0], 8, 'bold'),
-                bg=COLORS.get('purple', '#9b59b6'),
+                bg=COLORS.get('purple', '#1685E5'),
                 fg=COLORS['fg_0'],
                 padx=4, pady=1)
             qbadge.place(relx=0.5, rely=1.0, anchor='s', y=-8)
@@ -876,7 +876,7 @@ def _card_menu(app, event, game):
         menu.add_command(
             label=(_('Remove from queue') if in_q else _('Add to queue')),
             command=lambda g=game: _toggle_queue(app, g))
-        menu.add_command(label='\u26a1  ' + _('Process this game'),
+        menu.add_command(label='◈  ' + _('Process this game'),
                          command=lambda g=game: _process_single(app, g))
         menu.add_separator()
 
@@ -885,7 +885,7 @@ def _card_menu(app, event, game):
                 os.startfile(g.get('folder', ''))
             except Exception:
                 pass
-        menu.add_command(label='\U0001f4c2  ' + _('Open folder'),
+        menu.add_command(label='▤  ' + _('Open folder'),
                          command=_open_folder)
         menu.tk_popup(event.x_root, event.y_root)
     except Exception:
@@ -961,14 +961,14 @@ def _build_games_stats(body, app):
                  ).pack(anchor='w')
         return v
 
-    cells['games'] = _cell(0, '\U0001f3ae',
-                           COLORS.get('purple_hi', '#c891e0'),
+    cells['games'] = _cell(0, '◉',
+                           COLORS.get('purple_hi', '#2EA3FF'),
                            _('Games'), _('Total games'))
-    cells['queued'] = _cell(1, '\U0001f4c1', COLORS['warn_hi'],
+    cells['queued'] = _cell(1, '▤', COLORS['warn_hi'],
                             _('Queued'), _('In the queue'))
     cells['done'] = _cell(2, '\u2713', COLORS['success_hi'],
                           _('Completed'), _('Backports completed'))
-    cells['eta'] = _cell(3, '\u23f1', COLORS['accent_hi'],
+    cells['eta'] = _cell(3, '◷', COLORS['accent_hi'],
                          _('Est. Time'), _('Estimated queue time'))
     app._bp_stat_cells = cells
     _refresh_games_stats(app)
@@ -1074,11 +1074,11 @@ def _btn(parent, text, command, kind='ghost'):
         'primary': (COLORS['accent'],  COLORS['fg_0'],
                     COLORS.get('accent_hi', COLORS['accent']),
                     COLORS['fg_0']),
-        'success': (COLORS.get('success', '#4caf50'), COLORS['fg_0'],
-                    COLORS.get('success_hi', '#5dbf60'),
+        'success': (COLORS.get('success', '#42C786'), COLORS['fg_0'],
+                    COLORS.get('success_hi', '#6FDFA6'),
                     COLORS['fg_0']),
-        'purple':  (COLORS.get('purple', '#9b59b6'), COLORS['fg_0'],
-                    '#a567c1', COLORS['fg_0']),
+        'purple':  (COLORS.get('purple', '#1685E5'), COLORS['fg_0'],
+                    '#2EA3FF', COLORS['bg_0']),
         'ghost':   (COLORS['bg_2'],    COLORS['fg_2'],
                     COLORS['bg_3'],     COLORS['fg_0']),
     }

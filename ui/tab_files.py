@@ -4,8 +4,8 @@ ui/tab_files.py — exFAT File Manager tab (v2.9.0 redesign — Variant A).
 Step 50 (v2.9.0): full redesign per design_handoff_exfat_advanced/.
 Replaces the flat list with a split layout:
 
-    [ page head: 📁 exFAT File Manager  + subtitle              ]
-    [ mounted-image card: 📀 PPSA + title + path + drive stats  ]
+    [ page head: ▤ exFAT File Manager  + subtitle              ]
+    [ mounted-image card: ◉ PPSA + title + path + drive stats  ]
     ┌─ list column (1fr) ─────────────────┬─ inspector (288px) ─┐
     │ toolbar: breadcrumb + grouped btns  │ Inspector           │
     │ ┌─ Treeview ─────────────────────┐  │ ⬡ big icon          │
@@ -14,7 +14,7 @@ Replaces the flat list with a split layout:
     │ └────────────────────────────────┘  │ PATH/TYPE/MODIFIED/ │
     │ footer: 1 selected · 519 MB         │ SHA-256             │
     │                                     │ First 64 bytes hex  │
-    │                                     │ [Replace][Extract]🗑│
+    │                                     │ [Replace][Extract]✕│
     └─────────────────────────────────────┴─────────────────────┘
 
 Backwards-compat: the existing `app._fm_listbox`-style API is preserved
@@ -35,11 +35,11 @@ from tkinter_theme import COLORS, FONTS
 from exfat_builder import *  # noqa: F401,F403
 from exfat_builder import _
 # Underscore-prefixed names aren't pulled in by the star-import, and
-# subprocess/tempfile are submodule imports made inside exfat_builder
-# (not re-exported either). Pull them in explicitly here so the
+# tempfile is a submodule import made inside exfat_builder (not
+# re-exported either). Pull them in explicitly here so the
 # apply-backport helpers below have what they need.
 from exfat_builder import _NO_WIN_FLAGS, extract_ufs2tool
-import subprocess
+from ui.process_supervisor import run_process
 import tempfile
 
 
@@ -60,14 +60,14 @@ def _style_sel_pill(pill, n):
                     bg=COLORS['bg_3'], fg=COLORS['fg_4'])
 
 _TYPE_ICONS = {
-    'folder':  '\U0001f4c1',  # 📁
+    'folder':  '▤',  # ▤
     'binary':  '\u26ac',       # ⚬
     'exec':    '\u2b22',       # ⬢ — eboot.bin / sidbase.bin
     'log':     '\u2261',       # ≡ — playlgo.log
-    'text':    '\U0001f4c4',  # 📄 — discname.txt
+    'text':    '≣',  # ≣ — discname.txt
     'data':    '\u25c6',       # ◆ — sce_*
     'config':  '\u2699',       # ⚙ — sys
-    'unknown': '\U0001f4be',  # 💾 — fallback
+    'unknown': '▣',  # ▣ — fallback
 }
 _TYPE_COLORS = {
     'folder':  COLORS['accent'],
@@ -144,9 +144,9 @@ class ListboxProxy:
         name = s.strip()
         # Detect parent-dir or folder from the original icon glyph
         is_dir = (name == '..' or text.lstrip().startswith(
-            ('\U0001f4c1', '\U0001f4c2')))
+            ('▤', '▤')))
         kind, type_label = _classify(name, is_dir)
-        icon = _TYPE_ICONS.get(kind, '\U0001f4be')
+        icon = _TYPE_ICONS.get(kind, '▣')
         # Prefix the name column with the type icon
         name_with_icon = icon + '  ' + name
         self._tree.insert('', 'end', iid=iid,
@@ -237,7 +237,7 @@ def build_files_tab(parent, app):
                          width=32, height=32)
     icon_tile.pack(side='left')
     icon_tile.pack_propagate(False)
-    tk.Label(icon_tile, text='\U0001f4c1',
+    tk.Label(icon_tile, text='▤',
              bg=COLORS['accent_15'], fg=COLORS['accent'],
              font=('Segoe UI', 14)
              ).pack(expand=True)
@@ -286,7 +286,7 @@ def _build_mounted_card(parent, app):
         wrap,
         stats=[('Mounted On', 'drive'), ('Image Size', 'size'),
                ('Files', 'files'), ('Format', 'format')],
-        cover_glyph='\U0001f4c0', cover_size=110)
+        cover_glyph='◉', cover_size=110)
     app._fm_hero.pack(side='left', fill='x', expand=True)
     app._fm_hero.set_title(_('No image mounted'), '')
     app._fm_hero.set_stat('format', 'exFAT')
@@ -299,7 +299,7 @@ def _build_mounted_card(parent, app):
         command=lambda: _remount(app))
     app._fm_remount_btn.pack(side='top', pady=(0, 4))
     app._fm_dismount_btn = _danger_btn(btns,
-        '\u23cf  ' + _('Dismount'),
+        '✕  ' + _('Dismount'),
         command=app._fm_dismount)
     app._fm_dismount_btn.configure(state='disabled')
     app._fm_dismount_btn.pack(side='top')
@@ -348,7 +348,7 @@ def _build_mounted_card(parent, app):
                command=app._fm_browse
                ).pack(side='left', padx=(6, 0))
     app._fm_mount_btn = _accent_btn(sub,
-        '\U0001f517  ' + _('Mount'),
+        '◉  ' + _('Mount'),
         command=lambda: (_remount_and_refresh(app)))
     app._fm_mount_btn.pack(side='left', padx=(6, 0))
 
@@ -476,7 +476,7 @@ def _build_toolbar(parent, app):
     tb.pack(fill='x', pady=(0, 6))
     bc = tk.Frame(tb, bg=COLORS['bg_1'])
     bc.pack(side='left')
-    tk.Label(bc, text='\U0001f4c0',
+    tk.Label(bc, text='◉',
              font=('Segoe UI', 10), bg=COLORS['bg_1'],
              fg=COLORS['accent']).pack(side='left')
     tk.Label(bc, text=' \u203a ',
@@ -498,22 +498,22 @@ def _build_toolbar(parent, app):
         ).pack(side='left', padx=(0, 4))
     tk.Frame(btns, bg=COLORS['border_3'], width=1
              ).pack(side='left', fill='y', padx=6)
-    _tb('\u2795  ' + _('Add files'),  app._fm_add_file, kind='accent'
+    _tb('+  ' + _('Add files'),  app._fm_add_file, kind='accent'
         ).pack(side='left', padx=(0, 4))
-    _tb('\U0001f4c1  ' + _('Add folder'), app._fm_add_folder
+    _tb('▤  ' + _('Add folder'), app._fm_add_folder
         ).pack(side='left', padx=(0, 4))
-    _tb('\U0001f4c2  ' + _('New folder'), app._fm_new_folder
+    _tb('▤  ' + _('New folder'), app._fm_new_folder
         ).pack(side='left', padx=(0, 4))
     # ── Backport apply (overlays a user-made backport folder onto the
     #    mounted image, backing up replaced originals first). ──
-    _tb('\U0001f4e5  ' + _('Apply backport'),
+    _tb('⇩  ' + _('Apply backport'),
         lambda: _apply_backport(app), kind='accent'
         ).pack(side='left', padx=(0, 4))
     tk.Frame(btns, bg=COLORS['border_3'], width=1
              ).pack(side='left', fill='y', padx=6)
     _tb('\u21bb  ' + _('Replace'),    app._fm_replace_file
         ).pack(side='left', padx=(0, 4))
-    _tb('\U0001f5d1  ' + _('Delete'), app._fm_delete, kind='danger'
+    _tb('✕  ' + _('Delete'), app._fm_delete, kind='danger'
         ).pack(side='left', padx=(0, 4))
 
 
@@ -621,7 +621,7 @@ def _build_inspector(parent, app):
 
     hero = tk.Frame(parent, bg=COLORS['bg_2'])
     hero.pack(fill='x', padx=12, pady=(0, 8))
-    app._fm_insp_icon = tk.Label(hero, text='\U0001f4be',
+    app._fm_insp_icon = tk.Label(hero, text='▣',
         font=('Segoe UI', 40),
         bg=COLORS['bg_3'], fg=COLORS['fg_3'],
         width=2, height=2,
@@ -702,7 +702,7 @@ def _detail_row(parent, app, eyebrow, mono=False, accent=False, attr=None):
 
 def _clear_inspector(app):
     if hasattr(app, '_fm_insp_icon'):
-        app._fm_insp_icon.config(text='\U0001f4be',
+        app._fm_insp_icon.config(text='▣',
                                   fg=COLORS['fg_6'])
         app._fm_insp_name.config(text=_('No selection'), fg=COLORS['fg_4'])
         app._fm_insp_size.config(text='')
@@ -745,7 +745,7 @@ def _on_tree_select(app):
                  if app._fm_current_dir else name)
 
     kind, type_label = _classify(name, is_dir)
-    app._fm_insp_icon.config(text=_TYPE_ICONS.get(kind, '\U0001f4be'),
+    app._fm_insp_icon.config(text=_TYPE_ICONS.get(kind, '▣'),
                               fg=_TYPE_COLORS.get(kind, COLORS['fg_3']))
     app._fm_insp_name.config(text=name, fg=COLORS['fg_0'])
     app._fm_insp_size.config(text=_format_size(size) if size else '')
@@ -1349,15 +1349,15 @@ def _bp_pick_source_kind(app):
         slbl.pack(anchor='w')
         slbl.bind('<Button-1>', _on_click)
 
-    _row('\U0001f4c1', _('A folder'),
+    _row('▤', _('A folder'),
          _('A backport folder like the ones produced by Auto Backport '
            '(e.g. fakelib/, sce_module/, sce_sys/, eboot.bin).'),
          'folder')
-    _row('\U0001f4e6', _('A .ffpkg image'),
+    _row('▣', _('A .ffpkg image'),
          _('Read the backport tree out of a .ffpkg using UFS2Tool, '
            'then overlay it onto the mounted image.'),
          'ffpkg')
-    _row('\U0001f4be', _('An exFAT image'),
+    _row('▣', _('An exFAT image'),
          _('Mount a .exfat / .img read-only via OSFMount, copy its '
            'contents to a temp folder, then overlay.'),
          'exfat')
@@ -1418,19 +1418,30 @@ def _bp_ffpkg_to_temp(app, ffpkg_path):
 
 def _bp_run_ufs2(exe, args, timeout=120):
     """Tiny wrapper around UFS2Tool.exe; returns (returncode, combined_text).
-    Used only by the apply-backport ffpkg-source path."""
-    try:
-        result = subprocess.run(
-            [exe] + list(args),
-            capture_output=True, text=True,
-            encoding='utf-8', errors='replace',
-            timeout=timeout, creationflags=_NO_WIN_FLAGS)
-        out = (result.stdout or '') + (result.stderr or '')
-        return result.returncode, out
-    except subprocess.TimeoutExpired:
+    Used only by the apply-backport ffpkg-source path.
+
+    Routed through run_process so a wedged UFS2Tool is killed together with
+    its children and the call is bounded even if an inherited pipe is held
+    open (plain subprocess.run(timeout=...) can still hang in communicate
+    after killing the direct child on Windows)."""
+    lines = []
+    result = run_process(
+        [exe] + list(args),
+        on_line=lines.append,
+        idle_timeout=None,
+        warn_after=None,
+        hard_timeout=timeout,
+        poll_interval=0.25,
+        encoding='utf-8',
+        errors='replace',
+        creationflags=_NO_WIN_FLAGS,
+        tail_lines=200,
+    )
+    if result.error:
+        return -1, 'UFS2Tool error: ' + result.error
+    if result.timed_out:
         return -1, 'UFS2Tool timeout'
-    except Exception as e:
-        return -1, 'UFS2Tool error: ' + str(e)
+    return result.returncode, '\n'.join(lines)
 
 
 def _bp_parse_ls(text):
@@ -1529,14 +1540,17 @@ def _bp_exfat_to_temp(app, img_path):
     tmp = tempfile.mkdtemp(prefix='exfat_bp_exfat_src_')
     mounted = {'drive': None}
 
+    def _dismount():
+        if not mounted['drive']:
+            return
+        run_process(
+            [osf, '-d', '-m', mounted['drive']],
+            idle_timeout=None, warn_after=None, hard_timeout=30,
+            poll_interval=0.25, encoding='utf-8', errors='replace',
+            creationflags=_NO_WIN_FLAGS, tail_lines=20)
+
     def _cleanup():
-        if mounted['drive']:
-            try:
-                subprocess.run([osf, '-d', '-m', mounted['drive']],
-                               capture_output=True, timeout=30,
-                               creationflags=_NO_WIN_FLAGS)
-            except Exception:
-                pass
+        _dismount()
         try:
             _sh.rmtree(tmp, ignore_errors=True)
         except Exception:
@@ -1552,14 +1566,20 @@ def _bp_exfat_to_temp(app, img_path):
         if not free_letter:
             raise RuntimeError(_('No free drive letters available for mount.'))
 
-        result = subprocess.run(
+        result = run_process(
             [osf, '-a', '-t', 'file', '-f', img_path,
              '-m', free_letter, '-o', 'ro,rem'],
-            capture_output=True, text=True, timeout=120,
-            creationflags=_NO_WIN_FLAGS)
+            idle_timeout=None, warn_after=None, hard_timeout=120,
+            poll_interval=0.25, encoding='utf-8', errors='replace',
+            creationflags=_NO_WIN_FLAGS, tail_lines=100)
+        if result.error:
+            raise RuntimeError(_('OSFMount mount failed: ') +
+                               result.error[:300])
+        if result.timed_out:
+            raise RuntimeError(_('OSFMount mount timed out.'))
         if result.returncode != 0:
             raise RuntimeError(_('OSFMount mount failed: ') +
-                (result.stderr or result.stdout or '')[:300])
+                               '\n'.join(result.tail)[:300])
         mounted['drive'] = free_letter
 
         for _ in range(30):
@@ -1589,12 +1609,7 @@ def _bp_exfat_to_temp(app, img_path):
                     pass
 
         # Eager dismount.
-        try:
-            subprocess.run([osf, '-d', '-m', mounted['drive']],
-                           capture_output=True, timeout=30,
-                           creationflags=_NO_WIN_FLAGS)
-        except Exception:
-            pass
+        _dismount()
         mounted['drive'] = None
 
         return tmp, _cleanup

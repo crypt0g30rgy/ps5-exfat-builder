@@ -167,7 +167,7 @@ class DropZone(tk.Frame):
 class LabeledField(tk.Frame):
     """A label above a text input, optional Browse button, design-system styled.
 
-    Matches `.field` in the mock — the input is light (`field_bg` = #f0f0f0)
+    Matches `.field` in the mock — a dark elevated input surface
     on dark, with a Browse button to its right that opens a folder picker.
 
     Args:

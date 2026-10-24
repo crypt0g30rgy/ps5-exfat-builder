@@ -23,13 +23,14 @@ import os
 import sys
 import time
 import tempfile
-import subprocess
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from tkinter_theme import COLORS, FONTS
 from ui.shared.empty_state import EmptyState
+from ui.process_supervisor import (file_size_probe, run_process,
+                                   volume_used_probe)
 
 from exfat_builder import *  # noqa: F401,F403
 from exfat_builder import _, save_settings, extract_ufs2tool, _NO_WIN_FLAGS
@@ -52,14 +53,14 @@ def _style_sel_pill(pill, n):
                     bg=COLORS['bg_3'], fg=COLORS['fg_4'])
 
 _TYPE_ICONS = {
-    'folder':  '\U0001f4c1',  # 📁
+    'folder':  '▤',  # ▤
     'exec':    '\u2b22',       # ⬢
     'log':     '\u2261',       # ≡
-    'text':    '\U0001f4c4',  # 📄
+    'text':    '≣',  # ≣
     'data':    '\u25c6',       # ◆
     'config':  '\u2699',       # ⚙
     'binary':  '\u26ac',       # ⚬
-    'unknown': '\U0001f4be',  # 💾
+    'unknown': '▣',  # ▣
 }
 _TYPE_COLORS = {
     'folder':  COLORS['accent'],
@@ -131,23 +132,38 @@ def _ufs2_exe(app):
     return app._ffpkg_ufs2_exe
 
 
-def _run_ufs2(app, args, timeout=120):
-    """Run UFS2Tool.exe with the given args and return (rc, stdout)."""
+def _run_ufs2(app, args, timeout=120, probe=None, idle_timeout=None):
+    """Run UFS2Tool.exe with the given args and return (rc, stdout).
+
+    Runs under the shared process supervisor so a wedged tool is killed at
+    the hard limit (and its whole process tree with it) instead of leaving
+    the worker blocked forever.  UFS2Tool can be silent for long stretches
+    during a large extract, so the idle watchdog is disabled by default;
+    callers doing a long extract pass ``probe`` (e.g. the destination
+    volume's used bytes) plus ``idle_timeout`` so genuine progress keeps
+    the run alive while a real hang is caught promptly.
+    """
     exe = _ufs2_exe(app)
     enc = 'mbcs' if sys.platform.startswith('win') else 'utf-8'
-    try:
-        proc = subprocess.run(
-            [exe] + list(args),
-            capture_output=True, text=True,
-            encoding=enc, errors='replace',
-            timeout=timeout,
-            creationflags=_NO_WIN_FLAGS)
-        out = (proc.stdout or '') + (proc.stderr or '')
-        return proc.returncode, out
-    except subprocess.TimeoutExpired:
+    lines = []
+    result = run_process(
+        [exe] + list(args),
+        on_line=lines.append,
+        idle_timeout=idle_timeout,
+        warn_after=(5 * 60) if idle_timeout else None,
+        hard_timeout=timeout,
+        probe=probe,
+        poll_interval=0.25,
+        encoding=enc,
+        creationflags=_NO_WIN_FLAGS,
+        tail_lines=200,
+    )
+    out = '\n'.join(lines)
+    if result.error:
+        return -2, '(' + result.error + ')'
+    if result.timed_out:
         return -1, '(timeout after %ds)' % timeout
-    except Exception as e:
-        return -2, '(' + str(e) + ')'
+    return result.returncode, out
 
 
 def _parse_ls(text):
@@ -312,7 +328,7 @@ def build_ffpkg_edit_tab(parent, app):
     icon_tile = tk.Frame(head, bg=COLORS['accent_15'], width=32, height=32)
     icon_tile.pack(side='left')
     icon_tile.pack_propagate(False)
-    tk.Label(icon_tile, text='\u270f',
+    tk.Label(icon_tile, text='✎',
              bg=COLORS['accent_15'], fg=COLORS['accent'],
              font=('Segoe UI', 14)).pack(expand=True)
     title_col = tk.Frame(head, bg=COLORS['bg_1'])
@@ -363,7 +379,7 @@ def _build_image_card(parent, app):
         wrap,
         stats=[('Image Size', 'size'), ('Files', 'files'),
                ('Format', 'format')],
-        cover_glyph='\U0001f4e6', cover_size=110)
+        cover_glyph='▣', cover_size=110)
     app._fe_hero.pack(side='left', fill='x', expand=True)
     app._fe_hero.set_title(_('No image loaded'), '')
     app._fe_hero.set_stat('format', 'ffpkg')
@@ -374,7 +390,7 @@ def _build_image_card(parent, app):
     btns.pack(side='right', padx=(12, 0))
     _accent_btn(btns, _('Open Image...'),
         command=lambda: _browse_image(app)).pack(side='top', pady=(0, 4))
-    app._fe_close_btn = _danger_btn(btns, '\u23cf  ' + _('Close'),
+    app._fe_close_btn = _danger_btn(btns, '✕  ' + _('Close'),
         command=lambda: _close_image(app))
     app._fe_close_btn.configure(state='disabled')
     app._fe_close_btn.pack(side='top')
@@ -486,7 +502,7 @@ def _build_toolbar(parent, app):
     # Breadcrumb
     bc = tk.Frame(tb, bg=COLORS['bg_1'])
     bc.pack(side='left')
-    tk.Label(bc, text='\U0001f4e6',
+    tk.Label(bc, text='▣',
              font=('Segoe UI', 10), bg=COLORS['bg_1'],
              fg=COLORS['accent']).pack(side='left')
     tk.Label(bc, text=' \u203a ',
@@ -526,28 +542,28 @@ def _build_toolbar(parent, app):
     _sep()
 
     g_new = _group(_('Creation'))
-    _tb(g_new, '\u2795  ' + _('Add files'), lambda: _add_files(app),
+    _tb(g_new, '+  ' + _('Add files'), lambda: _add_files(app),
         kind='accent').pack(side='left', padx=(0, 4))
-    _tb(g_new, '\U0001f4c1  ' + _('Add folder'), lambda: _add_folder(app)
+    _tb(g_new, '▤  ' + _('Add folder'), lambda: _add_folder(app)
         ).pack(side='left', padx=(0, 4))
-    _tb(g_new, '\U0001f4c2  ' + _('New folder'), lambda: _new_folder(app)
+    _tb(g_new, '▤  ' + _('New folder'), lambda: _new_folder(app)
         ).pack(side='left', padx=(0, 4))
-    _tb(g_new, '\U0001f4e5  ' + _('Apply backport'),
+    _tb(g_new, '⇩  ' + _('Apply backport'),
         lambda: _apply_backport(app), kind='accent').pack(side='left',
                                                           padx=(0, 4))
-    _tb(g_new, '\U0001f50d  ' + _('Compare'), lambda: _compare_ffpkgs(app)
+    _tb(g_new, '⌕  ' + _('Compare'), lambda: _compare_ffpkgs(app)
         ).pack(side='left')
     _sep()
 
     g_mod = _group(_('Modification'))
     _tb(g_mod, '\u21bb  ' + _('Replace'), lambda: _replace_file(app)
         ).pack(side='left', padx=(0, 4))
-    _tb(g_mod, '\u270f  ' + _('Rename'), lambda: _rename(app)
+    _tb(g_mod, '✎  ' + _('Rename'), lambda: _rename(app)
         ).pack(side='left')
     _sep()
 
     g_dng = _group(_('Danger'))
-    _tb(g_dng, '\U0001f5d1  ' + _('Delete'), lambda: _delete(app),
+    _tb(g_dng, '✕  ' + _('Delete'), lambda: _delete(app),
         kind='danger').pack(side='left')
 
 
@@ -595,7 +611,7 @@ def _build_table(parent, app):
 
     # Empty-state overlay (shared component) — sits over the table and
     # is hidden the moment an image is loaded. Presentation only.
-    app._fe_empty = EmptyState(outer, icon='\U0001f4e6',
+    app._fe_empty = EmptyState(outer, icon='▣',
         title=_('No image loaded'),
         description=_('Browse to open a .ffpkg image'), bg='bg_2')
     app._fe_empty.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -651,7 +667,7 @@ class _TreeListboxProxy:
             iid = '%05d' % self._count
             self._count += 1
             kind, type_label = _classify(name, is_dir)
-            icon = _TYPE_ICONS.get(kind, '\U0001f4be')
+            icon = _TYPE_ICONS.get(kind, '▣')
             sz = '' if (is_dir is True or
                         (is_dir is None and '.' not in name.lower())
                        ) else _fmt_size(size)
@@ -682,7 +698,7 @@ def _build_inspector(parent, app):
 
     hero = tk.Frame(parent, bg=COLORS['bg_2'])
     hero.pack(fill='x', padx=12, pady=(0, 8))
-    app._fe_insp_icon = tk.Label(hero, text='\U0001f4be',
+    app._fe_insp_icon = tk.Label(hero, text='▣',
         font=('Segoe UI', 40),
         bg=COLORS['bg_3'], fg=COLORS['fg_3'],
         width=2, height=2,
@@ -709,7 +725,7 @@ def _build_inspector(parent, app):
     hex_outer = tk.Frame(parent, bg=COLORS['bg_2'])
     hex_outer.pack(fill='x', padx=12, pady=(0, 8))
     app._fe_insp_hex_btn = _ghost_btn(hex_outer,
-        '\U0001f50d  ' + _('Show first 64 bytes'),
+        '⌕  ' + _('Show first 64 bytes'),
         command=lambda: _fetch_hex(app))
     app._fe_insp_hex_btn.pack(fill='x')
     app._fe_insp_hex = tk.Text(hex_outer,
@@ -730,7 +746,7 @@ def _build_inspector(parent, app):
     actions = tk.Frame(parent, bg=COLORS['bg_2'])
     actions.pack(fill='x', padx=12, pady=(8, 12), side='bottom')
     app._fe_insp_rename = _ghost_btn(actions,
-        '\u270f  ' + _('Rename'),
+        '✎  ' + _('Rename'),
         command=lambda: _rename(app))
     app._fe_insp_rename.pack(side='left', fill='x', expand=True)
 
@@ -757,7 +773,7 @@ def _detail_row(parent, app, eyebrow, mono=False, accent=False, attr=None):
 
 def _clear_inspector(app):
     if hasattr(app, '_fe_insp_icon'):
-        app._fe_insp_icon.config(text='\U0001f4be', fg=COLORS['fg_6'])
+        app._fe_insp_icon.config(text='▣', fg=COLORS['fg_6'])
         app._fe_insp_name.config(text=_('No selection'), fg=COLORS['fg_4'])
         app._fe_insp_size.config(text='')
         app._fe_insp_path_lbl.config(text='—')
@@ -865,7 +881,7 @@ def _on_select(app):
         return
     full = _join_fs_path(app._fe_current, name)
     kind, type_label = _classify(name, is_dir)
-    app._fe_insp_icon.config(text=_TYPE_ICONS.get(kind, '\U0001f4be'),
+    app._fe_insp_icon.config(text=_TYPE_ICONS.get(kind, '▣'),
         fg=_TYPE_COLORS.get(kind, COLORS['fg_3']))
     app._fe_insp_name.config(text=name, fg=COLORS['fg_0'])
     app._fe_insp_size.config(text=_fmt_size(size) if size else '')
@@ -1485,7 +1501,7 @@ def _ask_overwrite(app, name, is_dir, allow_apply_to_all=False,
     if allow_merge:
         # Left side: Replace entirely (subtle ghost, with extra confirm)
         tk.Button(btns,
-            text='\U0001f5d1  ' + _('Replace entirely'),
+            text='✕  ' + _('Replace entirely'),
             font=(FONTS['button'][0], 9),
             bg=COLORS['bg_3'], fg=COLORS['danger_hi'],
             activebackground=COLORS['bg_5'],
@@ -1509,7 +1525,7 @@ def _ask_overwrite(app, name, is_dir, allow_apply_to_all=False,
         ow_btn = tk.Button(btns,
             text=_('Overwrite'),
             font=(FONTS['button'][0], 9, 'bold'),
-            bg=COLORS['warn'], fg='#000000',
+            bg=COLORS['warn'], fg=COLORS['bg_0'],
             activebackground=COLORS['warn_hi'],
             relief='flat', bd=0, padx=12, pady=6, cursor='hand2',
             command=lambda: _pick('overwrite'))
@@ -1781,33 +1797,31 @@ def _apply_backport(app):
 
         # Shared flag for the background poll thread so we can shut it
         # down between stages without leaking a thread.
-        poll_state = {'stop': False, 'dir': None, 'cb': None}
+        poll_state = {'stop': False, 'dir': None, 'cb': None,
+                      'base_used': None}
 
         def _poll_loop():
-            """Counts files+dirs under poll_state['dir'] and pushes the
-            count to whatever callback poll_state['cb'] is set to. Used
-            for the extract stage (we don't get progress from UFS2Tool
-            itself, so we just watch the disk fill up)."""
+            """Reports bytes added to the volume holding poll_state['dir'].
+
+            Previously this walked the whole dump tree every 0.7 s, which
+            competed with the extraction it was supposed to be measuring
+            and made large images crawl.  Used-space deltas are O(1) and
+            tell us the same thing: how much the extraction has written.
+            """
+            import shutil as _sh
             import time as _t
             while not poll_state['stop']:
                 d  = poll_state['dir']
                 cb = poll_state['cb']
-                if d and cb and os.path.isdir(d):
+                base = poll_state['base_used']
+                if d and cb and base is not None:
                     try:
-                        n_files = 0
-                        n_bytes = 0
-                        for _r, _ds, _fs in os.walk(d):
-                            n_files += len(_fs)
-                            for f in _fs:
-                                try:
-                                    n_bytes += os.path.getsize(
-                                        os.path.join(_r, f))
-                                except Exception:
-                                    pass
-                        cb(n_files, n_bytes)
+                        used = _sh.disk_usage(d).used
+                        if used >= base:
+                            cb(0, used - base)
                     except Exception:
                         pass
-                _t.sleep(0.7)
+                _t.sleep(2.0)
 
         poll_thread = threading.Thread(target=_poll_loop, daemon=True,
             name='ffpkg-rebuild-poll')
@@ -1858,18 +1872,32 @@ def _apply_backport(app):
                 pct = (n_bytes * 100.0 / ex_target_bytes) if ex_target_bytes \
                                                           else 0.0
                 pct = max(0.0, min(99.0, pct))   # never hit 100 here
-                app.after(0, prog.set_stage_progress, pct,
-                    _('%(files)d files extracted  •  %(bytes)s')
-                    % {'files': n_files, 'bytes': _bp_fmt_size(n_bytes)})
+                if n_files:
+                    detail = _('%(files)d files extracted  •  %(bytes)s') \
+                        % {'files': n_files,
+                           'bytes': _bp_fmt_size(n_bytes)}
+                else:
+                    detail = _('%(bytes)s extracted') \
+                        % {'bytes': _bp_fmt_size(n_bytes)}
+                app.after(0, prog.set_stage_progress, pct, detail)
 
+            # Baseline used-space on the target volume before extraction.
+            try:
+                import shutil as _shp
+                poll_state['base_used'] = _shp.disk_usage(dump_dir).used
+            except Exception:
+                poll_state['base_used'] = None
             poll_state['dir'] = dump_dir
             poll_state['cb']  = _extract_progress_cb
 
+            _ext_probe = volume_used_probe(dump_dir)
             ex_rc, ex_out = _run_ufs2(app, ['extract', img, dump_dir],
-                                       timeout=3600)
+                                       timeout=3600, probe=_ext_probe,
+                                       idle_timeout=15 * 60)
             if ex_rc != 0:
                 ex_rc, ex_out = _run_ufs2(app,
-                    ['extract', img, dump_dir, '/'], timeout=3600)
+                    ['extract', img, dump_dir, '/'], timeout=3600,
+                    probe=_ext_probe, idle_timeout=15 * 60)
 
             # Detach poll from extract dir before reading final count.
             poll_state['cb'] = None
@@ -1953,104 +1981,101 @@ def _apply_backport(app):
 
             # Stream the newfs output so we can drive the progress bar
             # off UFS2Tool's own "%" reports rather than just guessing.
-            try:
-                p = subprocess.Popen(cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True, encoding='utf-8', errors='replace',
-                    bufsize=1,
-                    creationflags=_NO_WIN_FLAGS)
-            except Exception as e:
-                raise RuntimeError(_('newfs launch failed: ') + str(e))
-
-            captured_tail = []
+            # run_process waits on process exit (not pipe EOF), kills the
+            # whole tree on a timeout, and watches the growing image so a
+            # silent-but-working build is not mistaken for a hang.
             newfs_stage = 'init'   # local — switches to 'files' when we
                                    # see "Adding files to image"
-            try:
-                for raw in iter(p.stdout.readline, ''):
-                    line = raw.rstrip('\r\n')
-                    if not line:
-                        continue
-                    # Keep a rolling tail for the failure message.
-                    captured_tail.append(line)
-                    if len(captured_tail) > 50:
-                        del captured_tail[:-50]
 
-                    stripped = line.strip()
+            def _on_newfs_line(line):
+                nonlocal newfs_stage
+                if not line:
+                    return
+                stripped = line.strip()
 
-                    # Stage transitions
-                    if 'Writing cylinder groups' in stripped:
-                        newfs_stage = 'init'
-                        app.after(0, prog.set_stage, 'init',
-                            _('Writing filesystem structure...'))
-                    elif 'Adding files to image' in stripped:
-                        newfs_stage = 'files'
-                        app.after(0, prog.set_stage, 'files',
-                            _('Copying files into image...'))
-                    elif 'Populated image with' in stripped \
-                            or 'Image created successfully' in stripped:
-                        app.after(0, prog.set_stage_progress, 100.0,
-                            _('Image created, finalising...'))
+                # Stage transitions
+                if 'Writing cylinder groups' in stripped:
+                    newfs_stage = 'init'
+                    app.after(0, prog.set_stage, 'init',
+                        _('Writing filesystem structure...'))
+                elif 'Adding files to image' in stripped:
+                    newfs_stage = 'files'
+                    app.after(0, prog.set_stage, 'files',
+                        _('Copying files into image...'))
+                elif 'Populated image with' in stripped \
+                        or 'Image created successfully' in stripped:
+                    app.after(0, prog.set_stage_progress, 100.0,
+                        _('Image created, finalising...'))
 
-                    # Percentage parsing — uses the existing UFS2Tool
-                    # output format "<stage>... NN% (...)".
-                    import re as _re
-                    m = _re.search(r'(\d{1,3})\s*%', stripped)
-                    if not m:
-                        continue
-                    raw_pct = max(0, min(100, int(m.group(1))))
+                # Percentage parsing — uses the existing UFS2Tool
+                # output format "<stage>... NN% (...)".
+                import re as _re
+                m = _re.search(r'(\d{1,3})\s*%', stripped)
+                if not m:
+                    return
+                raw_pct = max(0, min(100, int(m.group(1))))
 
-                    # File counts and byte progress
-                    mf = _re.search(r'\((\d+)\s*/\s*(\d+)\s+files?',
-                                     stripped)
-                    files_done = files_total = 0
-                    if mf:
-                        files_done  = int(mf.group(1))
-                        files_total = int(mf.group(2))
-                    mg = _re.search(
-                        r'([\d.]+)\s*GiB\s*/\s*([\d.]+)\s*GiB',
-                        stripped)
-                    written_gib = total_gib = 0.0
-                    if mg:
-                        written_gib = float(mg.group(1))
-                        total_gib   = float(mg.group(2))
+                # File counts and byte progress
+                mf = _re.search(r'\((\d+)\s*/\s*(\d+)\s+files?',
+                                 stripped)
+                files_done = files_total = 0
+                if mf:
+                    files_done  = int(mf.group(1))
+                    files_total = int(mf.group(2))
+                mg = _re.search(
+                    r'([\d.]+)\s*GiB\s*/\s*([\d.]+)\s*GiB',
+                    stripped)
+                written_gib = total_gib = 0.0
+                if mg:
+                    written_gib = float(mg.group(1))
+                    total_gib   = float(mg.group(2))
 
-                    if newfs_stage == 'init':
-                        app.after(0, prog.set_stage_progress,
-                            float(raw_pct),
-                            _('Initialising filesystem... %d%%') % raw_pct)
-                    elif newfs_stage == 'files':
-                        # Build the detail line from whatever fields we
-                        # managed to parse.
-                        bits = []
-                        if files_total > 0:
-                            bits.append('%d / %d files'
-                                        % (files_done, files_total))
-                        if total_gib > 0:
-                            bits.append('%.2f GB / %.2f GB'
-                                        % (written_gib, total_gib))
-                        detail = '  •  '.join(bits) if bits \
-                                                   else '%d%%' % raw_pct
-                        app.after(0, prog.set_stage_progress,
-                            float(raw_pct), detail)
-            finally:
-                # Drain any remaining output and wait.
-                try:
-                    rest = p.stdout.read()
-                    if rest:
-                        captured_tail.extend(rest.splitlines())
-                except Exception:
-                    pass
-                try:
-                    rc_newfs = p.wait(timeout=60)
-                except Exception:
-                    p.kill()
-                    rc_newfs = -1
+                if newfs_stage == 'init':
+                    app.after(0, prog.set_stage_progress,
+                        float(raw_pct),
+                        _('Initialising filesystem... %d%%') % raw_pct)
+                elif newfs_stage == 'files':
+                    # Build the detail line from whatever fields we
+                    # managed to parse.
+                    bits = []
+                    if files_total > 0:
+                        bits.append('%d / %d files'
+                                    % (files_done, files_total))
+                    if total_gib > 0:
+                        bits.append('%.2f GB / %.2f GB'
+                                    % (written_gib, total_gib))
+                    detail = '  •  '.join(bits) if bits \
+                                               else '%d%%' % raw_pct
+                    app.after(0, prog.set_stage_progress,
+                        float(raw_pct), detail)
 
+            newfs_res = run_process(
+                cmd,
+                on_line=_on_newfs_line,
+                idle_timeout=45 * 60,
+                warn_after=5 * 60,
+                on_warning=lambda idle: app.after(
+                    0, prog.set_detail,
+                    _('No output for %d min — still working...')
+                    % max(1, int(idle // 60))),
+                probe=file_size_probe(new_img),
+                poll_interval=0.5,
+                encoding='utf-8',
+                creationflags=_NO_WIN_FLAGS,
+                tail_lines=50,
+            )
+            if newfs_res.error:
+                raise RuntimeError(
+                    _('newfs launch failed: ') + str(newfs_res.error))
+            if newfs_res.timed_out:
+                raise RuntimeError(
+                    _('newfs stopped: ') + newfs_res.summary() + '\n' +
+                    '\n'.join(newfs_res.tail[-10:])[:800])
+            rc_newfs = newfs_res.returncode
             if rc_newfs != 0:
                 raise RuntimeError(
                     _('newfs failed: ') +
-                    '\n'.join(captured_tail[-10:])[:800])
+                    '\n'.join(newfs_res.tail[-10:])[:800])
             if not os.path.isfile(new_img) or os.path.getsize(new_img) == 0:
                 raise RuntimeError(
                     _('newfs reported success but the output file is '
@@ -2621,15 +2646,15 @@ def _bp_pick_source_kind(app):
         slbl.pack(anchor='w')
         slbl.bind('<Button-1>', _on_click)
 
-    _row('\U0001f4c1', _('A folder'),
+    _row('▤', _('A folder'),
          _('A backport folder like the ones produced by Auto Backport '
            '(e.g. fakelib/, sce_module/, sce_sys/, eboot.bin).'),
          'folder')
-    _row('\U0001f4e6', _('A .ffpkg image'),
+    _row('▣', _('A .ffpkg image'),
          _('Read the backport tree out of a .ffpkg using UFS2Tool, '
            'then overlay it onto the open image.'),
          'ffpkg')
-    _row('\U0001f4be', _('An exFAT image'),
+    _row('▣', _('An exFAT image'),
          _('Mount a .exfat / .img read-only via OSFMount, copy its '
            'contents to a temp folder, then overlay.'),
          'exfat')
@@ -2749,15 +2774,21 @@ def _bp_extract_exfat_to_temp(app, img_path):
 
     tmp = tempfile.mkdtemp(prefix='exfat_bp_src_')
     mounted = {'drive': None}
+    enc = 'mbcs' if os.name == 'nt' else 'utf-8'
+
+    def _dismount():
+        """Best-effort bounded dismount; never blocks the caller."""
+        try:
+            run_process([osf, '-d', '-m', mounted['drive']],
+                        idle_timeout=None, warn_after=None,
+                        hard_timeout=30, encoding=enc,
+                        creationflags=_NO_WIN_FLAGS, tail_lines=20)
+        except Exception:
+            pass
 
     def _cleanup():
         if mounted['drive']:
-            try:
-                subprocess.run([osf, '-d', '-m', mounted['drive']],
-                               capture_output=True, timeout=30,
-                               creationflags=_NO_WIN_FLAGS)
-            except Exception:
-                pass
+            _dismount()
         try:
             _sh.rmtree(tmp, ignore_errors=True)
         except Exception:
@@ -2775,14 +2806,19 @@ def _bp_extract_exfat_to_temp(app, img_path):
             raise RuntimeError(_('No free drive letters available for mount.'))
 
         # Mount read-only + removable.
-        result = subprocess.run(
+        result = run_process(
             [osf, '-a', '-t', 'file', '-f', img_path,
              '-m', free_letter, '-o', 'ro,rem'],
-            capture_output=True, text=True, timeout=120,
-            creationflags=_NO_WIN_FLAGS)
+            idle_timeout=None, warn_after=None, hard_timeout=120,
+            encoding=enc, creationflags=_NO_WIN_FLAGS, tail_lines=50)
+        if result.error:
+            raise RuntimeError(_('OSFMount mount failed: ') + result.error)
+        if result.timed_out:
+            raise RuntimeError(_('OSFMount mount failed: ') +
+                _('did not respond within %d seconds') % 120)
         if result.returncode != 0:
             raise RuntimeError(_('OSFMount mount failed: ') +
-                (result.stderr or result.stdout or '')[:300])
+                '\n'.join(result.tail)[:300])
         mounted['drive'] = free_letter
 
         # Wait for the drive to appear.
@@ -2819,12 +2855,7 @@ def _bp_extract_exfat_to_temp(app, img_path):
 
         # Dismount eagerly now that the copy is done — don't keep the
         # drive busy during the overlay.
-        try:
-            subprocess.run([osf, '-d', '-m', mounted['drive']],
-                           capture_output=True, timeout=30,
-                           creationflags=_NO_WIN_FLAGS)
-        except Exception:
-            pass
+        _dismount()
         mounted['drive'] = None
 
         return tmp, _cleanup
@@ -3057,19 +3088,25 @@ def _compare_ffpkgs(app):
             os.makedirs(dump_b, exist_ok=True)
 
             app.after(0, app._fe_status_var.set, _('Extracting A...'))
-            rc, out = _run_ufs2(app, ['extract', a, dump_a], timeout=3600)
+            _probe_a = volume_used_probe(dump_a)
+            rc, out = _run_ufs2(app, ['extract', a, dump_a], timeout=3600,
+                                probe=_probe_a, idle_timeout=15 * 60)
             if rc != 0:
                 rc, out = _run_ufs2(app,
-                    ['extract', a, dump_a, '/'], timeout=3600)
+                    ['extract', a, dump_a, '/'], timeout=3600,
+                    probe=_probe_a, idle_timeout=15 * 60)
             if rc != 0:
                 raise RuntimeError(_('Extract A failed: ') +
                                    (out or '').strip()[:300])
 
             app.after(0, app._fe_status_var.set, _('Extracting B...'))
-            rc, out = _run_ufs2(app, ['extract', b, dump_b], timeout=3600)
+            _probe_b = volume_used_probe(dump_b)
+            rc, out = _run_ufs2(app, ['extract', b, dump_b], timeout=3600,
+                                probe=_probe_b, idle_timeout=15 * 60)
             if rc != 0:
                 rc, out = _run_ufs2(app,
-                    ['extract', b, dump_b, '/'], timeout=3600)
+                    ['extract', b, dump_b, '/'], timeout=3600,
+                    probe=_probe_b, idle_timeout=15 * 60)
             if rc != 0:
                 raise RuntimeError(_('Extract B failed: ') +
                                    (out or '').strip()[:300])

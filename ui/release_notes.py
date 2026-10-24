@@ -108,7 +108,7 @@ def _btn(parent, text, primary=False, command=None, accent=None):
     """A flat themed button. primary=filled accent, else subtle."""
     if primary:
         bg = accent or COLORS['accent']
-        fg = '#ffffff'
+        fg = COLORS['fg_0']
         abg = COLORS.get('accent_pressed', bg)
     else:
         bg = COLORS['bg_4']
@@ -116,7 +116,7 @@ def _btn(parent, text, primary=False, command=None, accent=None):
         abg = COLORS['bg_5']
     b = tk.Button(parent, text=text, command=command,
                   font=FONTS['button'], bg=bg, fg=fg,
-                  activebackground=abg, activeforeground='#ffffff',
+                  activebackground=abg, activeforeground=COLORS['fg_0'],
                   relief='flat', bd=0, padx=16, pady=9, cursor='hand2')
     return b
 
@@ -253,7 +253,7 @@ def show_release_modal(app, force=False):
     sup.pack(fill='x')
     sup_in = tk.Frame(sup, bg=COLORS['bg_3'])
     sup_in.pack(fill='x', padx=16, pady=14)
-    tk.Label(sup_in, text='\u2764  Support Development',
+    tk.Label(sup_in, text='Support Development',
              font=FONTS['body_b'], bg=COLORS['bg_3'],
              fg=COLORS['fg_0'], anchor='w').pack(fill='x')
     n_sup = r.get('supporters')
@@ -264,7 +264,7 @@ def show_release_modal(app, force=False):
     tk.Label(sup_in, text=sup_msg, font=FONTS['label'],
              bg=COLORS['bg_3'], fg=COLORS['fg_3'], anchor='w',
              justify='left', wraplength=W - 110).pack(fill='x', pady=(4, 10))
-    _btn(sup_in, '\u2615  Buy Me A Coffee', primary=True,
+    _btn(sup_in, 'Buy Me A Coffee', primary=True,
          command=lambda: _open(KOFI_URL)).pack(anchor='w')
 
     # ── Pinned button bar (always visible, not scrolled) ──
@@ -342,7 +342,7 @@ def build_support_card(parent, app):
     # Title row
     trow = tk.Frame(inner, bg=COLORS['bg_2'])
     trow.pack(fill='x')
-    tk.Label(trow, text='\u2764  Support Development', font=FONTS['h3'],
+    tk.Label(trow, text='Support Development', font=FONTS['h3'],
              bg=COLORS['bg_2'], fg=COLORS['fg_0']).pack(side='left')
     tk.Label(trow, text='v' + RELEASE.get('version', ''),
              font=FONTS['meta'], bg=COLORS['bg_2'],
@@ -491,7 +491,7 @@ def _show_success_prompt(app, op_label):
              justify='left', wraplength=W - 60).pack(fill='x', pady=(4, 14))
 
     tk.Frame(body, bg=COLORS['border_2'], height=1).pack(fill='x')
-    tk.Label(body, text='\u2764  Enjoying exFAT Image Builder?',
+    tk.Label(body, text='Enjoying exFAT Image Builder?',
              font=FONTS['body_b'], bg=COLORS['bg_1'],
              fg=COLORS['fg_1'], anchor='w').pack(fill='x', pady=(12, 2))
     tk.Label(body, text='Support helps fund future development.',

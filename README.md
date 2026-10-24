@@ -10,6 +10,7 @@ Build • Edit • Convert • Backport • Deploy
 ![License](https://img.shields.io/github/license/kerrdec97/ps5-exfat-builder)
 ![Release](https://img.shields.io/github/v/release/kerrdec97/ps5-exfat-builder)
 ![Downloads](https://img.shields.io/github/downloads/kerrdec97/ps5-exfat-builder/total)
+![Build](https://github.com/kerrdec97/ps5-exfat-builder/actions/workflows/build-release.yml/badge.svg)
 
 
 ------------------------------------------------------------------------
@@ -47,6 +48,7 @@ Designed for speed, reliability and ease of use.
 -   ✅ Automatic Image Verification
 -   ✅ Queue Multiple Builds
 -   ✅ Automatic Game Detection
+-   ✅ Custom output names (title, version, required firmware, title ID)
 
 ## 🛠 Image Editor
 
@@ -104,6 +106,54 @@ Supports **17 interface languages**, maintained by the community.
 4.  Choose **exFAT**, **FFPKG** or **FFPFSC**.
 5.  Click **Add to Queue** then **Build All**.
 6.  Wait for Scan → Build → Copy → Verify to complete.
+
+------------------------------------------------------------------------
+
+# 🏷 Output File Naming
+
+Automatic output names are controlled by a template in
+**Settings → Build → Output file naming**, also reachable from the
+**Edit template…** link in the Build tab's *Output name* card. The
+default is:
+
+```text
+%PPSA% %TITLE% (%VERSION%) (%FIRMWARE%)
+```
+
+| Placeholder | Value |
+| --- | --- |
+| `%TITLE%` | Game title |
+| `%VERSION%` | Game / patch version, e.g. `01.000.000` |
+| `%FIRMWARE%` | Required system firmware, e.g. `10.00` or `12.70` |
+| `%PPSA%` | Title ID, e.g. `PPSA01234` (aliases: `%TITLE_ID%`, `%TITLEID%`, `%ID%`) |
+| `%FW%` | Alias for `%FIRMWARE%` |
+
+Example using the default template:
+
+```text
+PPSA01234 Marvel's Spider-Man 2 (01.000.000) (10.00).exfat
+```
+
+A missing value removes that placeholder together with its brackets, so
+a game with no detected firmware keeps the classic shape:
+
+```text
+PPSA01234 Some Game (01.000.000).exfat
+```
+
+Select the **Classic** preset to omit firmware entirely, or type any
+arrangement of the placeholders above. The template applies to automatic
+`.exfat` / `.ffpkg` names and to queue and UniBuild output. The required
+firmware is read from `param.json`
+(`requiredSystemSoftwareVersion`), with `param.sfo` as a fallback.
+
+------------------------------------------------------------------------
+
+# 🧱 Building from Source
+
+See **[BUILD.md](BUILD.md)** for Windows prerequisites, manual build
+steps, checksum generation, and the GitHub Actions build/release
+pipeline.
 
 ------------------------------------------------------------------------
 

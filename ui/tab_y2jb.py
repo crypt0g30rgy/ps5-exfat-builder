@@ -16,7 +16,7 @@ not a UI refactor.
 
 Layout (unchanged from existing):
     ┌─ page head ──────────────────────────────────────────────┐
-    │ 🎬 Y2JB Tools  — YouTube Jailbreak · Install · Patch    │
+    │ ▶ Y2JB Tools  — YouTube Jailbreak · Install · Patch    │
     ├─ info banner ────────────────────────────────────────────┤
     │ ℹ Requires etaHEN with Direct Package Installer V2…     │
     ├─ sub-tab bar (upgraded SubTabBar with underline) ───────┤
@@ -53,7 +53,7 @@ def build_y2jb_tab(parent, app):
     # ── Page head ──
     head = tk.Frame(parent, bg=COLORS['bg_1'])
     head.pack(fill='x', padx=24, pady=(14, 6))
-    tk.Label(head, text='\U0001f3ac  ' + _('Y2JB Tools'),
+    tk.Label(head, text='▶  ' + _('Y2JB Tools'),
              font=(FONTS['h2'][0], 14, 'bold'),
              bg=COLORS['bg_1'], fg=COLORS['fg_0']
              ).pack(side='left')
@@ -150,7 +150,7 @@ def build_y2jb_tab(parent, app):
                 pass
         app.after(200, _after)
 
-    make_themed_button(qbtns, '\U0001f4c2  ' + _('Browse PS5'),
+    make_themed_button(qbtns, '▤  ' + _('Browse PS5'),
                        command=lambda: _goto_ftp('browser'),
                        kind='ghost', font_size=9, padx=12, pady=6
                        ).pack(side='left')
@@ -158,7 +158,7 @@ def build_y2jb_tab(parent, app):
                        command=lambda: _goto_ftp('upload'),
                        kind='ghost', font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(8, 0))
-    make_themed_button(qbtns, '\U0001f4e1  ' + _('Open etaHEN folder'),
+    make_themed_button(qbtns, '◉  ' + _('Open etaHEN folder'),
                        command=lambda: _goto_ftp('browser',
                                                  '/data/etaHEN/'),
                        kind='ghost', font_size=9, padx=12, pady=6
@@ -263,15 +263,15 @@ def build_y2jb_tab(parent, app):
     # ── Sub-tab bar (uses the upgraded SubTabBar with underline pattern) ──
     app._y2jb_subtabs = SubTabBar(parent, font_size=10, pad=(16, 9))
     conn_pane  = app._y2jb_subtabs.add_tab('connection',
-                                            '\U0001f50c  ' + _('Connection'))
+                                            '◉  ' + _('Connection'))
     inst_pane  = app._y2jb_subtabs.add_tab('install',
-                                            '\U0001f4e4  ' + _('Install'))
+                                            '⇧  ' + _('Install'))
     patch_pane = app._y2jb_subtabs.add_tab('patch',
-                                            '\U0001f6e1  ' + _('Patch'))
+                                            '◈  ' + _('Patch'))
     files_pane = app._y2jb_subtabs.add_tab('files',
-                                            '\U0001f4e1  ' + _('Files'))
+                                            '◉  ' + _('Files'))
     auto_pane  = app._y2jb_subtabs.add_tab('autoloader',
-                                            '\U0001f4c4  ' + _('Autoloader'))
+                                            '≣  ' + _('Autoloader'))
 
     # Wrap each pane in a scrollable canvas (same helper as before)
     def make_scroll(pane):
@@ -425,7 +425,7 @@ def _build_install_cards(parent, app):
 
         # Install button — same workflow entry point
         ibtn = make_themed_button(
-            body, '\U0001f4e4  ' + _('Install %s') % region,
+            body, '⇧  ' + _('Install %s') % region,
             command=lambda reg=region: app._y2jb_install_pkg(reg),
             kind='primary', font_size=10, padx=14, pady=8)
         ibtn.pack(fill='x')
@@ -443,7 +443,7 @@ def _build_install_cards(parent, app):
             app._y2jb_check_pkg(r)
 
     # ── Install progress card ──
-    prog = Card(wrap, title=_('Install progress'), icon='\U0001f4e4',
+    prog = Card(wrap, title=_('Install progress'), icon='⇧',
                 subtitle=_('Requires etaHEN with Direct Package Installer '
                            'V2 enabled.'))
     prog.pack(fill='x', pady=(12, 0))
