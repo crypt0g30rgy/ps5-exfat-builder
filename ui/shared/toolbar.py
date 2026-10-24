@@ -120,7 +120,7 @@ class Toolbar(tk.Frame):
     Usage:
         tb = Toolbar(parent, title="Queue actions")
         tb.pack(fill="x")
-        tb.add(IconButton(tb.items, label="Clear", icon="\U0001f5d1",
+        tb.add(IconButton(tb.items, label="Clear", icon="\u00d7",
                           variant="ghost", command=app._clear_queue))
         # or add any widget:
         tb.add(some_widget, side="right")
@@ -158,20 +158,20 @@ if __name__ == "__main__":
 
     tb = Toolbar(root, title="Queue")
     tb.pack(fill="x", padx=16, pady=20)
-    tb.add(IconButton(tb.items, label="Add", icon="\u2795",
+    tb.add(IconButton(tb.items, label="Add", icon="+",
                       variant="primary",
                       command=lambda: print("add clicked")))
-    tb.add(IconButton(tb.items, label="Build All", icon="\U0001f528",
+    tb.add(IconButton(tb.items, label="Build All", icon="\u25a6",
                       variant="success",
                       command=lambda: print("build all clicked")))
-    tb.add(IconButton(tb.items, label="Clear", icon="\U0001f5d1",
+    tb.add(IconButton(tb.items, label="Clear", icon="\u00d7",
                       variant="ghost",
                       command=lambda: print("clear clicked")))
 
     tb2 = Toolbar(root, title="Planned")
     tb2.pack(fill="x", padx=16)
     # no command -> visibly disabled placeholder, no fake behavior
-    tb2.add(IconButton(tb2.items, label="Cloud Sync", icon="\u2601",
+    tb2.add(IconButton(tb2.items, label="Cloud Sync", icon="\u25a7",
                        variant="secondary", command=None,
                        coming_later=True))
 

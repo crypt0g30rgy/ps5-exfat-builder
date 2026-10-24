@@ -8,13 +8,13 @@ Layout:
     ┌─ toolbar (page-head) ───────────────────────────────────────────┐
     │  My Images                                                      │
     │  82 images · 4.21 TB total · D:/ free 412 GB                    │
-    │              [↻ Re-scan] [📂 Open folder] [🎮 Send selected]   │
+    │              [↻ Re-scan] [▤ Open folder] [◉ Send selected]   │
     ├─ scan-dirs strip ───────────────────────────────────────────────┤
     │  D:/PS5/Images  ✕      D:/Backports  ✕    [+ Add folder]       │
     ├─ filterbar ─────────────────────────────────────────────────────┤
-    │  🔍 search    [All 82] [FW 4.51+ 61] [Backport 14] [Update 23]  │
+    │  ⌕ search    [All 82] [FW 4.51+ 61] [Backport 14] [Update 23]  │
     ├─ card grid ─────────────────────────────────────────────────────┤
-    │  🎮Returnal       🎮Last of Us II  🎮Elden Ring  🎮GoW Ragnarok │
+    │  ◉Returnal       ◉Last of Us II  ◉Elden Ring  ◉GoW Ragnarok │
     │  CUSA-22871 v2.10  CUSA-03173 …    CUSA-26879 …  CUSA-31000 …   │
     │  ...                                                            │
     └─────────────────────────────────────────────────────────────────┘
@@ -125,7 +125,7 @@ def _build_toolbar(parent, app):
                command=app._img_add_dir
                ).pack(side='right')
     app._img_batch_btn = _accent_btn(bar,
-        '\U0001f3ae  ' + _('Send selected to PS5'),
+        '◉  ' + _('Send selected to PS5'),
         command=app._img_batch_upload)
     app._img_batch_btn.pack(side='right', padx=(0, 12))
 
@@ -142,7 +142,7 @@ def _build_filterbar(parent, app):
                            highlightbackground=COLORS['border_3'],
                            highlightthickness=1)
     search_wrap.pack(side='left')
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_0'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(8, 4))
@@ -299,12 +299,12 @@ def _re_render_grid(app):
         holder.pack(fill='x', pady=20)
         holder.pack_propagate(False)
         if not app._img_entries:
-            EmptyState(holder, icon='\U0001f4be',
+            EmptyState(holder, icon='▣',
                        title=_('No Images Found'),
                        description=_('Build an image to see it here.')
                        ).pack(fill='both', expand=True)
         else:
-            EmptyState(holder, icon='\U0001f50d',
+            EmptyState(holder, icon='⌕',
                        title=_('No matches'),
                        description=_('No images match the current '
                                      'search or filter.')

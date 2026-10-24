@@ -202,10 +202,10 @@ def build_micromount_tab(parent, app):
 # (key, icon, label, sublabel, field_count, accent_token)
 # ════════════════════════════════════════════════════════════════════
 _SECTIONS = [
-    ('core',    '📁', 'Core',            'target dir · scan paths · interval',  4, 'teal'),
-    ('lvd',     '💾', 'LVD profile',     'loopback-device mount parameters',     4, 'accent'),
-    ('pfs',     '🔒', 'PFS profile',     'filesystem type · key mode · flags',   9, 'accent'),
-    ('payload', '📡', 'Payload',         'send micromount.elf · TCP 9021',        2, 'teal'),
+    ('core',    '▤', 'Core',            'target dir · scan paths · interval',  4, 'teal'),
+    ('lvd',     '▣', 'LVD profile',     'loopback-device mount parameters',     4, 'accent'),
+    ('pfs',     '■', 'PFS profile',     'filesystem type · key mode · flags',   9, 'accent'),
+    ('payload', '◉', 'Payload',         'send micromount.elf · TCP 9021',        2, 'teal'),
 ]
 
 _KEY_TO_SECTION = {
@@ -264,7 +264,7 @@ def _build_toolbar(parent, app):
                ('Scan Interval', 'interval'),
                ('Payload', 'payload'),
                ('Configuration', 'config')],
-        icon='\U0001f5c2', icon_size=64)
+        icon='▤', icon_size=64)
     hero.pack(fill='x')
     app._mm_hero = hero
 
@@ -347,14 +347,14 @@ def _build_toolbar(parent, app):
 
     # ── Actions row ──
     actions = hero.actions_row()
-    make_themed_button(actions, '\U0001f4e5  Load from PS5',
+    make_themed_button(actions, '⇩  Load from PS5',
                        command=lambda: _load_from_ps5(app), kind='primary',
                        font_size=9, padx=12, pady=6).pack(side='left')
-    make_themed_button(actions, '\U0001f4dd  Fetch log',
+    make_themed_button(actions, '✎  Fetch log',
                        command=lambda: _fetch_debug_log(app), kind='ghost',
                        font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(6, 0))
-    make_themed_button(actions, '\U0001f4e1  Send Payload',
+    make_themed_button(actions, '◉  Send Payload',
                        command=lambda: _send_payload(app), kind='success',
                        font_size=9, padx=12, pady=6
                        ).pack(side='left', padx=(6, 0))
@@ -380,11 +380,11 @@ def _toolbar_btn(parent, text, cmd, kind='default'):
     bg = _BG_CARD_HEAD
     fg = _FG
     if kind == 'primary':
-        bg, fg = _TEAL, '#000000'
+        bg, fg = _TEAL, COLORS['bg_0']
     elif kind == 'warn':
-        bg, fg = _WARN, '#000000'
+        bg, fg = _WARN, COLORS['bg_0']
     elif kind == 'success':
-        bg, fg = _SUCCESS, '#000000'
+        bg, fg = _SUCCESS, COLORS['bg_0']
     elif kind == 'ghost':
         bg, fg = _BG_TOOLBAR, _FG_MUTED
     return tk.Button(parent, text=text, command=cmd,
@@ -407,7 +407,7 @@ def _build_rail(parent, app):
                             font=_F_BODY)
     search_entry.pack(fill='x', ipady=4, ipadx=8)
     _install_placeholder(search_entry, app._mm_search_var,
-                         '\U0001f50d  Filter settings\u2026')
+                         '⌕  Filter settings\u2026')
 
     def _on_search_change(*_):
         q = (app._mm_search_var.get() or '').strip().lower()
@@ -429,7 +429,7 @@ def _build_rail(parent, app):
              bg=_BG_RAIL, fg=_FG_MUTED, font=_F_EYEBROW,
              anchor='w').pack(fill='x', padx=14, pady=(14, 4))
 
-    ov_row = _make_rail_row(parent, app, 'overview', '\U0001f3e0',
+    ov_row = _make_rail_row(parent, app, 'overview', '⌂',
                             'Overview', len(_SECTIONS))
     app._mm_rail_rows['overview'] = ov_row
     for key, icon, label, _sub, count, _accent in _SECTIONS:
@@ -643,7 +643,7 @@ def _build_overview_card(parent, app):
     head.pack(fill='x')
     hi = tk.Frame(head, bg=_BG_CARD_HEAD)
     hi.pack(fill='x', padx=14, pady=10)
-    tk.Label(hi, text='\U0001f3e0', bg=_BG_CARD_HEAD, fg=_TEAL,
+    tk.Label(hi, text='⌂', bg=_BG_CARD_HEAD, fg=_TEAL,
              font=_F_BODY).pack(side='left')
     tk.Label(hi, text='Overview', bg=_BG_CARD_HEAD, fg=_FG,
              font=_F_H3).pack(side='left', padx=(10, 0))
@@ -1116,7 +1116,7 @@ def _build_payload_section(parent, app):
             except Exception:
                 pass
 
-    tk.Button(browse_row, text='\U0001f4c2  Browse\u2026',
+    tk.Button(browse_row, text='▤  Browse\u2026',
               command=_browse_elf,
               bg=_BG_CARD_HEAD, fg=_FG, font=_F_BUTTON,
               activebackground=_BG_ROW_HOV, activeforeground=_FG,
@@ -1450,7 +1450,7 @@ class SettingRow:
             value.strip().lower() in ('1', 'true', 'yes', 'on'))
         self._tk_var = tk.BooleanVar(value=initial)
         self._toggle_pill = tk.Label(cell, text='ON',
-                                      bg=_SUCCESS, fg='#000000',
+                                      bg=_SUCCESS, fg=COLORS['bg_0'],
                                       font=_F_MONO,
                                       padx=10, pady=2,
                                       cursor='hand2',
@@ -1467,7 +1467,7 @@ class SettingRow:
         on = bool(self._tk_var.get())
         if on:
             bg = _DANGER if self._danger else _SUCCESS
-            fg = '#ffffff' if self._danger else '#000000'
+            fg = COLORS['fg_0'] if self._danger else COLORS['bg_0']
             text = 'ON'
         else:
             bg = _BG_CARD_HEAD
@@ -1534,7 +1534,7 @@ class SettingRow:
         menu = tk.Menu(mb, tearoff=0,
                        bg=COLORS['bg_3'], fg=_FG,
                        activebackground=_TEAL,
-                       activeforeground='#000000',
+                       activeforeground=COLORS['fg_0'],
                        bd=0, font=_F_MONO)
         for choice in choices:
             def _pick(v=choice):

@@ -28,7 +28,7 @@ DISCORD_HANDLE  = 'scottish_deckerr'
 def _btn(parent, text, primary=False, command=None, accent=None):
     if primary:
         bg = accent or COLORS['accent']
-        fg = '#ffffff'
+        fg = COLORS['fg_0']
         abg = COLORS.get('accent_pressed', bg)
     else:
         bg = COLORS['bg_4']
@@ -36,7 +36,7 @@ def _btn(parent, text, primary=False, command=None, accent=None):
         abg = COLORS['bg_5']
     return tk.Button(parent, text=text, command=command,
                      font=FONTS['button'], bg=bg, fg=fg,
-                     activebackground=abg, activeforeground='#ffffff',
+                     activebackground=abg, activeforeground=COLORS['fg_0'],
                      relief='flat', bd=0, padx=14, pady=8, cursor='hand2')
 
 
@@ -94,7 +94,7 @@ def build_report_tab(parent, app):
     gen_card.pack(fill='x')
     gi = tk.Frame(gen_card, bg=COLORS['bg_2'])
     gi.pack(fill='x', padx=18, pady=16)
-    tk.Label(gi, text='\U0001f4c4  Diagnostic report', font=FONTS['h3'],
+    tk.Label(gi, text='≣  Diagnostic report', font=FONTS['h3'],
              bg=COLORS['bg_2'], fg=COLORS['fg_0'], anchor='w').pack(fill='x')
     tk.Label(gi,
              text=('Includes: app version, timestamp, Windows version, '
@@ -125,7 +125,7 @@ def build_report_tab(parent, app):
                  fill='x', pady=(20, 6))
     prev_frame.pack(fill='x')
     log_text = tk.Text(prev_frame, height=10, font=('Consolas', 9),
-                       bg='#0a0a0f', fg='#a0c8a0', relief='flat', bd=8,
+                       bg=COLORS['bg_0'], fg=COLORS['success_hi'], relief='flat', bd=8,
                        wrap='none', state='disabled')
     log_text.pack(fill='both', expand=True)
 
@@ -169,7 +169,7 @@ def build_report_tab(parent, app):
         _refresh_preview()
 
     # Generate button (primary) — placed first, before the secondary actions.
-    _btn(gi, '\u26a1  Generate Diagnostic Report', primary=True,
+    _btn(gi, '◈  Generate Diagnostic Report', primary=True,
          command=_generate).pack(anchor='w', pady=(0, 10), before=gbtns)
     open_folder_btn.pack(side='left')
     copy_path_btn.pack(side='left', padx=8)
@@ -208,20 +208,20 @@ def build_report_tab(parent, app):
         _btn(ci, action_label, command=action,
              accent=COLORS.get(accent_key)).pack(anchor='w')
 
-    _card(0, 0, '\U0001f41e', 'GitHub Issues',
+    _card(0, 0, '△', 'GitHub Issues',
           'Best for bugs, crashes and feature requests. Tracked + '
           'searchable history.',
           GITHUB_ISSUES, 'Open GitHub Issues',
           lambda: _open(GITHUB_ISSUES))
-    _card(1, 0, '\U0001f465', 'Telegram Group',
+    _card(1, 0, '◉', 'Telegram Group',
           'Best for community help and testing feedback.',
           't.me/ps5exfatbuilder', 'Open Telegram Group',
           lambda: _open(TELEGRAM_GROUP), accent_key='teal')
-    _card(0, 1, '\U0001f4e2', 'Telegram Direct',
+    _card(0, 1, '△', 'Telegram Direct',
           'Best for direct contact with Deckerr97.',
           'Username: ' + TELEGRAM_DIRECT, 'Copy Telegram Username',
           lambda: _copy(app, TELEGRAM_DIRECT), accent_key='teal')
-    _card(1, 1, '\U0001f4ac', 'Discord',
+    _card(1, 1, '▫', 'Discord',
           'Best for quick support and troubleshooting.',
           'Username: ' + DISCORD_HANDLE, 'Copy Discord Username',
           lambda: _copy(app, DISCORD_HANDLE))

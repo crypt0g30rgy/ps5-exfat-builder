@@ -73,7 +73,7 @@ class StatCard(tk.Frame):
     """A compact metric tile: icon, large value, caption.
 
     Usage:
-        sc = StatCard(parent, icon="\U0001f4be", value="12",
+        sc = StatCard(parent, icon="\u25a3", value="12",
                       caption="Built Images", status="success")
         sc.pack(side="left")
         ...
@@ -126,13 +126,13 @@ if __name__ == "__main__":
 
     stats = tk.Frame(root, bg=COLORS["bg_1"])
     stats.pack(fill="x", padx=16, pady=16)
-    StatCard(stats, icon="\U0001f4be", value="12",
+    StatCard(stats, icon="\u25a3", value="12",
              caption="Built Images", status="success").pack(
                  side="left", fill="both", expand=True, padx=4)
-    StatCard(stats, icon="\U0001f528", value="3",
+    StatCard(stats, icon="\u25a6", value="3",
              caption="In Queue", status="running").pack(
                  side="left", fill="both", expand=True, padx=4)
-    StatCard(stats, icon="\u26a0", value="1",
+    StatCard(stats, icon="\u25b3", value="1",
              caption="Errors", status="error").pack(
                  side="left", fill="both", expand=True, padx=4)
 

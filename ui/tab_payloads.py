@@ -10,14 +10,14 @@ Layout:
     ├─ workspace ─────────────────────────────────────────────────────┤
     │ ┌─ list-wrap (left, expands) ──┐ ┌─ detail aside (right, 280px)┐│
     │ │ Payloads  N saved             │ │ etaHEN                       ││
-    │ │ 🔍 search…                    │ │ v2.1b · 2.4 MB              ││
+    │ │ ⌕ search…                    │ │ v2.1b · 2.4 MB              ││
     │ │ ┌─ payload card ─────────────┐│ │                              ││
-    │ │ │⚡ etaHEN                    ││ │ Description text…            ││
+    │ │ │◈ etaHEN                    ││ │ Description text…            ││
     │ │ │ HEN payload, FTP+klog       ││ │ ──────────────────           ││
     │ │ │ FW 5.50 · v2.1b · ↗ Send   ││ │ file: etahen.bin             ││
     │ │ └────────────────────────────┘│ │ target: ...                  ││
     │ │ ┌─ payload card (selected) ──┐│ │ requires: ...                ││
-    │ │ │⚡ kex umtx                  ││ │ ──────────────────           ││
+    │ │ │◈ kex umtx                  ││ │ ──────────────────           ││
     │ │ └────────────────────────────┘│ │ Target consoles              ││
     │ │ ...                           │ │ ●192.168.1.42 · :9020        ││
     │ │                               │ │ [↗ Send to ...]              ││
@@ -245,7 +245,7 @@ def _build_list_pane(parent, app):
                            highlightbackground=COLORS['border_3'],
                            highlightthickness=1)
     search_wrap.pack(fill='x', padx=22, pady=(0, 10))
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_0'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(8, 4))
@@ -319,7 +319,7 @@ def _render_detail_empty(app):
         w.destroy()
     inner = tk.Frame(app._pl_detail_frame, bg=COLORS['bg_1'])
     inner.pack(fill='both', expand=True, pady=40)
-    tk.Label(inner, text='\U0001f4e5',
+    tk.Label(inner, text='⇩',
              font=(FONTS['body'][0], 32),
              bg=COLORS['bg_1'], fg=COLORS['fg_6']
              ).pack()
@@ -451,7 +451,7 @@ def _render_detail_for(app, idx):
     _ghost_btn(actions, '\u270e  ' + _('Edit'),
                command=lambda: app._pl_edit(idx)
                ).pack(side='left', fill='x', expand=True, padx=(0, 4))
-    _danger_btn(actions, '\U0001f5d1  ' + _('Remove'),
+    _danger_btn(actions, '✕  ' + _('Remove'),
                 command=lambda: _pl_remove_then_refresh(app, idx)
                 ).pack(side='left', fill='x', expand=True)
 

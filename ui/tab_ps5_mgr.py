@@ -14,12 +14,12 @@ Layout:
     ├─ legend ────────────────────────────────────────────────────────┤
     │ ●On PS5  ●Built locally, not uploaded  ●Not built yet           │
     ├─ filter toolbar ────────────────────────────────────────────────┤
-    │ 🔍 Search  [All][●On PS5][●Local only][●Size mismatch]          │
+    │ ⌕ Search  [All][●On PS5][●Local only][●Size mismatch]          │
     ├─ table (sticky header) ─────────────────────────────────────────┤
     │   Game             Local    PS5     Status    Path     Actions  │
-    │ 🎮 Astros Playroom 4.2GB    4.2GB   ●ON PS5   /data/   ▶ ✓ 🗑   │
-    │ 🎮 Returnal        56.8GB   56.8GB  ●ON PS5   /data/   ▶ ✓ 🗑   │
-    │ 🎮 Demon's Souls   62.4GB   23.7GB  ●UPLOAD   /tmp     ⏸ ✕      │
+    │ ◉ Astros Playroom 4.2GB    4.2GB   ●ON PS5   /data/   ▶ ✓ ✕   │
+    │ ◉ Returnal        56.8GB   56.8GB  ●ON PS5   /data/   ▶ ✓ ✕   │
+    │ ◉ Demon's Souls   62.4GB   23.7GB  ●UPLOAD   /tmp     ‖ ✕      │
     │ ...                                                              │
     └─────────────────────────────────────────────────────────────────┘
 
@@ -117,7 +117,7 @@ def _build_hero(body, app):
                ('etaHEN', 'etahen'),
                ('FTP', 'ftp'),
                (_('Payload'), 'payload')],
-        icon='\U0001f3ae', icon_size=72)
+        icon='◉', icon_size=72)
     hero.pack(fill='x')
     hero.add_strip([(_('Storage Used'), 'used'),
                     (_('Free Space'), 'free'),
@@ -471,17 +471,17 @@ def _build_tool_cards(body, app):
     # (key, icon, title, description). Wording reuses the v3.6.x audit
     # refinements (Kernel Log, Y2JB spelled out, SMP/MicroMount phrasing).
     cards = [
-        ('ftp',        '\U0001f4e1', _('File Transfer'),
+        ('ftp',        '◉', _('File Transfer'),
          _('Browse and transfer files to and from your PS5.')),
-        ('payloads',   '\U0001f680', _('Send Payloads'),
+        ('payloads',   '⇧', _('Send Payloads'),
          _('Send .elf / .bin payloads to your PS5.')),
-        ('klog',       '\U0001f4dd', _('Kernel Log'),
+        ('klog',       '✎', _('Kernel Log'),
          _('Stream the PS5 kernel log live.')),
-        ('y2jb',       '\U0001f3ac', 'Y2JB',
+        ('y2jb',       '▶', 'Y2JB',
          _('YouTube to Jailbreak \u2014 install enabling PKGs.')),
-        ('smp',        '\u26a1',     'ShadowMount+',
+        ('smp',        '◈',     'ShadowMount+',
          _('Configure and deploy the ShadowMount+ automounter.')),
-        ('micromount', '\U0001f5c2', 'MicroMount',
+        ('micromount', '▤', 'MicroMount',
          _('Configure and deploy the MicroMount automounter.')),
     ]
 
@@ -623,7 +623,7 @@ def _build_recent_activity(body, app):
     rows_wrap.pack(fill='x')
 
     # Icon per event kind (token-coloured in _render).
-    _ICONS = {'payload': '\U0001f680', 'connection': '\U0001f4e1',
+    _ICONS = {'payload': '⇧', 'connection': '◉',
               'error': '\u26a0'}
 
     def _render():
@@ -743,7 +743,7 @@ def _build_toolbar(body, app):
                            highlightbackground=COLORS['border_3'],
                            highlightthickness=1)
     search_wrap.pack(side='left')
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_0'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(8, 4))
@@ -858,7 +858,7 @@ def _build_table(body, app):
 def _show_empty_state(parent, app=None):
     """Shared EmptyState inside the rows frame, with a Refresh action."""
     es = scroll_empty_state(
-        parent, icon='\U0001f3ae',
+        parent, icon='◉',
         title=_('No data yet'),
         description=_('Refresh to scan local images and connect to '
                       'your PS5 over FTP.'),

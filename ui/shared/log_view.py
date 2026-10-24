@@ -2,8 +2,8 @@
 ui/shared/log_view.py — terminal-styled console log widget.
 
 ConsoleView — a tk.Text-based terminal console with:
-  - Klog-green-on-near-black palette (matches the design system's
-    `--klog-green: #00ff41` token, used exclusively by terminal-style logs)
+  - A restrained log palette built from the theme's success / warning /
+    error / muted tokens on the deepest surface
   - Pre-configured color tags for ERR / WARN / INFO / DBG levels
   - Filter-highlight tag for live search
   - Optional word-wrap toggle, scrollbar, and selection highlight
@@ -21,8 +21,8 @@ from tkinter_theme import COLORS, FONTS
 # Terminal palette — pinned to design system tokens for the klog console.
 # These five colors are intentional and design-system-blessed (see
 # README.md "Klog console gets terminal-grade colors").
-_TERM_BG     = COLORS['bg_0']        # near-black sunken console (#050505)
-_TERM_GREEN  = COLORS['success_ok']  # saturated #00ff41 — klog signature
+_TERM_BG     = COLORS['bg_0']        # deepest surface
+_TERM_GREEN  = COLORS['success_ok']  # log text
 _TERM_RED    = COLORS['danger_hi']   # ERR
 _TERM_AMBER  = COLORS['warn_hi']     # WARN
 _TERM_DIM    = COLORS['fg_4']        # DBG / muted lines
@@ -61,10 +61,8 @@ class ConsoleView(tk.Frame):
                          highlightthickness=1,
                          **kwargs)
 
-        # Thin green top-rule — the mock has a horizontal accent line at
-        # the top of the log surface. We approximate with a 1-px Frame.
-        # bg picks up the dim klog-green at low intensity.
-        rule = tk.Frame(self, bg='#1a3322', height=1)
+        # Thin top rule in the success surface tone.
+        rule = tk.Frame(self, bg=COLORS['success_bg'], height=1)
         rule.pack(fill='x')
 
         # ── Scrollable Text widget ──
@@ -80,7 +78,7 @@ class ConsoleView(tk.Frame):
                             font=(FONTS['mono_sm'][0], 9),
                             bg=bg, fg=_TERM_GREEN,
                             insertbackground=_TERM_GREEN,
-                            selectbackground='#1a3322',
+                            selectbackground=COLORS['accent_15'],
                             selectforeground=COLORS['fg_0'],
                             relief='flat', bd=8,
                             state='disabled', wrap='word',
@@ -100,7 +98,7 @@ class ConsoleView(tk.Frame):
         # white foreground. Matches the mock's `.match` style.
         self.text.tag_configure('highlight',
                                 foreground=COLORS['fg_0'],
-                                background='#3a2a00')   # warn at low alpha
+                                background=COLORS['warn_bg'])
 
     # ── Convenience pass-through methods ──
     # These mirror the most-used tk.Text methods so callers can write

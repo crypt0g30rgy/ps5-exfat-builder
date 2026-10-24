@@ -9,17 +9,17 @@ Extract an image to a folder. Format-routed (Stage 3a):
 Layout (single column, no embedded log — uses global OUTPUT LOG):
 
     ┌─ Page head ───────────────────────────────────────────────────────┐
-    │ [📤]  Extract image                                               │
+    │ [⇧]  Extract image                                               │
     │       Mount + copy contents from an .exfat image                  │
     ├───────────────────────────────────────────────────────────────────┤
     │ [i] Mounts via OSFMount, mirrors files preserving structure...    │
     ├───────────────────────────────────────────────────────────────────┤
     │ ┌─ Drop zone ─────────────────────────────────────────────────┐ │
-    │ │   📤  Drop .exfat image here                                │ │
+    │ │   ⇧  Drop .exfat image here                                │ │
     │ │       or click to browse                                    │ │
     │ └─────────────────────────────────────────────────────────────┘ │
     │ ┌─ Detected strip (when file selected) ───────────────────────┐ │
-    │ │ 🎮 Returnal · CUSA-XXXXX · v1.04 · 56.8 GB                   │ │
+    │ │ ◉ Returnal · CUSA-XXXXX · v1.04 · 56.8 GB                   │ │
     │ └─────────────────────────────────────────────────────────────┘ │
     │ ┌─ Form fields ───────────────────────────────────────────────┐ │
     │ │ Source image                                                │ │
@@ -35,7 +35,7 @@ Layout (single column, no embedded log — uses global OUTPUT LOG):
     │ │ │ status text         [████──────] ETA xx:xx              │ │ │
     │ │ └────────────────────────────────────────────────────────┘ │ │
     │ │                                                             │ │
-    │ │ [📤 Extract Image]                                          │ │
+    │ │ [⇧ Extract Image]                                          │ │
     │ └─────────────────────────────────────────────────────────────┘ │
     └───────────────────────────────────────────────────────────────────┘
 
@@ -54,10 +54,11 @@ import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-from tkinter_theme import COLORS, FONTS
+from tkinter_theme import COLORS, FONTS, set_scaled_font
 
 from exfat_builder import *  # noqa: F401,F403
 from exfat_builder import _, _NO_WIN_FLAGS
+from ui.process_supervisor import run_process, volume_used_probe
 from ui.shared.scroll import attach_scroll
 
 from ui.shared.cards import DetectedGameStrip
@@ -97,7 +98,7 @@ def build_extract_tab(parent, app):
     attach_scroll(canvas)
 
     # ── Page head ──
-    head = page_head(inner, '\U0001f4e4',
+    head = page_head(inner, '⇧',
                      _('Extract image'),
                      _('Extract an .exfat, .ffpkg, or PFS image to a folder.'))
     head.pack(fill='x', padx=24, pady=(14, 12))
@@ -135,7 +136,7 @@ def build_extract_tab(parent, app):
         pad,
         stats=[('Format', 'format'), ('Image Size', 'size'),
                ('Expected Files', 'files'), ('Output Space', 'output')],
-        cover_glyph='\U0001f4e4', cover_size=150)
+        cover_glyph='⇧', cover_size=150)
     app._extract_hero.pack(fill='x', pady=(0, 14))
     app._extract_hero.set_title(_('No image selected'), '')
     app._extract_hero.set_badge(_('SELECT AN IMAGE'), 'wait')
@@ -219,13 +220,13 @@ def build_extract_tab(parent, app):
                   on_drop=lambda p: _on_drop(app, p),
                   on_click=lambda: _browse_any_image(app),
                   hint=None,
-                  glyph='\U0001f4e4')
+                  glyph='⇧')
     dz.pack(fill='x', pady=(14, 0))
     try:
         # compress to a slim one-line strip
         _inner = dz._glyph_lbl.master
         _inner.pack_configure(padx=12, pady=7)
-        dz._glyph_lbl.configure(font=(FONTS['body'][0], 12))
+        set_scaled_font(dz._glyph_lbl, (FONTS['body'][0], 12))
         dz._glyph_lbl.pack_configure(side='left', padx=(0, 8))
         dz._main_lbl.configure(
             text=_('Drop .exfat / .ffpkg / PFS image here \u00b7 or Browse above'),
@@ -240,7 +241,7 @@ def build_extract_tab(parent, app):
         text=_('Extract Image'),
         command=lambda: _route_extract(app),
         kind='success',
-        icon='\U0001f4e4',
+        icon='⇧',
         font_size=13, padx=34, pady=14)
     app._extract_btn.pack(fill='x', pady=(18, 0))
 
@@ -560,20 +561,34 @@ def _validated_dest(app, kind_label):
 def _spawn_ufs2_extract(app, exe, img, dest, on_line):
     """Run `UFS2Tool extract <img> <dest>`, streaming output lines to
     on_line. Returns the return code. Separated so tests can stub the
-    subprocess."""
-    proc = subprocess.Popen([exe, 'extract', img, dest],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT,
-                            text=True, errors='replace',
-                            creationflags=_NO_WIN_FLAGS)
-    try:
-        for line in proc.stdout:
-            line = line.rstrip()
-            if line:
-                on_line(line)
-    except Exception:
-        pass
-    return proc.wait()
+    subprocess.
+
+    Uses the shared supervisor: waits on process exit (not pipe EOF) and
+    kills the tree if UFS2Tool stops producing output or growing the
+    destination for 45 minutes. The destination volume's used bytes are a
+    progress signal for stretches where the tool prints nothing.
+    """
+    result = run_process(
+        [exe, 'extract', img, dest],
+        on_line=lambda line: on_line(line) if line.strip() else None,
+        encoding=('mbcs' if os.name == 'nt' else 'utf-8'),
+        errors='replace',
+        creationflags=_NO_WIN_FLAGS,
+        idle_timeout=45 * 60,
+        warn_after=5 * 60,
+        on_warning=lambda idle: on_line(
+            'No output or file growth for %d min — still extracting…'
+            % max(1, int(idle // 60))),
+        probe=volume_used_probe(dest),
+        poll_interval=0.5,
+    )
+    if result.error:
+        on_line('UFS2Tool failed to start: ' + result.error)
+        return -1
+    if result.timed_out:
+        on_line('UFS2Tool stopped: ' + result.summary())
+        return 124
+    return result.returncode if result.returncode is not None else -1
 
 
 def _run_ffpkg_extract_tab(app):

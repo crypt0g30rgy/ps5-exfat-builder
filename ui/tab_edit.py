@@ -72,7 +72,7 @@ def build_edit_tab(parent, app):
     icon_tile = tk.Frame(head, bg=COLORS['accent_15'], width=32, height=32)
     icon_tile.pack(side='left')
     icon_tile.pack_propagate(False)
-    tk.Label(icon_tile, text='\u270f', bg=COLORS['accent_15'],
+    tk.Label(icon_tile, text='✎', bg=COLORS['accent_15'],
              fg=COLORS['accent'], font=('Segoe UI', 14)).pack(expand=True)
 
     title_col = tk.Frame(head, bg=COLORS['bg_1'])
@@ -98,7 +98,7 @@ def build_edit_tab(parent, app):
         _edit_open(app, state, _show_mode, _set_pill, pfs_api)
     from ui.shared.page_head import make_themed_button
     make_themed_button(head, _('Open image\u2026'), command=_open,
-                       kind='accent', icon='\U0001f4c2',
+                       kind='accent', icon='▤',
                        font_size=10).pack(side='right', padx=(0, 10))
 
     # ── Format selector strip (manual override) ──
@@ -115,9 +115,9 @@ def build_edit_tab(parent, app):
         b.bind('<Button-1>', lambda e, k=key: _show_mode(k))
         seg_btns[key] = b
 
-    _seg('ffpkg', '\U0001f4e6  ffpkg')
-    _seg('exfat', '\U0001f5c2  exFAT')
-    _seg('pfs',   '\U0001f5dc  PFS')
+    _seg('ffpkg', '▣  ffpkg')
+    _seg('exfat', '▤  exFAT')
+    _seg('pfs',   '▣  PFS')
 
     # ── Stacked editor panes ──
     body = tk.Frame(parent, bg=COLORS['bg_1'])
@@ -215,12 +215,12 @@ def _build_pfs_workspace(pane, app, state):
     steps_row = tk.Frame(wrap, bg=COLORS['bg_1'])
     steps_row.pack(fill='x', pady=(0, 14))
     _STEP_DEFS = [
-        ('1', _('Select PFS Image'), '\U0001f5dc', _('Choose a .ffpfs or .ffpfsc.')),
-        ('2', _('Unpack to Workspace'), '\U0001f4e4',
+        ('1', _('Select PFS Image'), '▣', _('Choose a .ffpfs or .ffpfsc.')),
+        ('2', _('Unpack to Workspace'), '⇧',
          _('Extract contents to a folder.')),
-        ('3', _('Edit Files'), '\U0001f4dd',
+        ('3', _('Edit Files'), '✎',
          _('Edit files (or the nested image).')),
-        ('4', _('Rebuild Image'), '\U0001f4e6',
+        ('4', _('Rebuild Image'), '▣',
          _('Rebuild a NEW image from Build.')),
     ]
     step_refs = []
@@ -402,7 +402,7 @@ def _build_pfs_workspace(pane, app, state):
                                                           pady=(0, 4))
             make_themed_button(actions, _('Edit nested .ffpkg here'),
                 command=lambda np=nested: _handoff_ffpkg(np),
-                kind='accent', icon='\U0001f4e6', font_size=10).pack(
+                kind='accent', icon='▣', font_size=10).pack(
                     side='left')
         elif kind == 'exfat':
             tk.Label(actions,
@@ -412,7 +412,7 @@ def _build_pfs_workspace(pane, app, state):
                                                           pady=(0, 4))
             make_themed_button(actions, _('Edit nested .exfat here'),
                 command=lambda np=nested: _handoff_exfat(np),
-                kind='accent', icon='\U0001f5c2', font_size=10).pack(
+                kind='accent', icon='▤', font_size=10).pack(
                     side='left')
         else:
             msg = (_('Unpacked the nested raw PFS image (pfs_image.dat). '

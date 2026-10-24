@@ -7,13 +7,13 @@ Layout:
 
     ┌─ rail ──────────────┬─ pane ────────────────────────────────────┐
     │ SETTINGS            │ ┌─ pane-head ──────────────────────────── │
-    │ ▌ 💾 OSFMount       │ │  PS5 FTP                                 │
-    │   🔧 Build          │ │  Connection used by Klog, FTP, payload…  │
-    │   📄 Logs           │ ├─ pane-body ──────────────────────────── │
-    │ ▌ 📡 PS5 FTP    ←   │ │ ┌─ Connection card ─────────────────┐  │
-    │   🔔 Notifications  │ │ │ Console IP   [..............] [Test]│ │
-    │   🎨 Theme          │ │ │ FTP port     [2121]    ●Reachable  │ │
-    │   💤 Auto-Shutdown  │ │ │ Klog port    [3232]    ●Reachable  │ │
+    │ ▌ ▣ OSFMount       │ │  PS5 FTP                                 │
+    │   ⚙ Build          │ │  Connection used by Klog, FTP, payload…  │
+    │   ≣ Logs           │ ├─ pane-body ──────────────────────────── │
+    │ ▌ ◉ PS5 FTP    ←   │ │ ┌─ Connection card ─────────────────┐  │
+    │   △ Notifications  │ │ │ Console IP   [..............] [Test]│ │
+    │   ▧ Theme          │ │ │ FTP port     [2121]    ●Reachable  │ │
+    │   ○ Auto-Shutdown  │ │ │ Klog port    [3232]    ●Reachable  │ │
     │ ─                   │ │ │ Auto-reconnect             [toggle]│ │
     │   ↻ Reset to defs   │ │ └────────────────────────────────────┘  │
     └────────────────────┴─────────────────────────────────────────┘
@@ -35,7 +35,8 @@ from tkinter import ttk
 from tkinter_theme import COLORS, FONTS
 
 from exfat_builder import *  # noqa: F401,F403
-from exfat_builder import _, save_settings, LeftRail
+from exfat_builder import (_, save_settings, LeftRail,
+                           CLASSIC_OUTPUT_TEMPLATE)
 
 from ui.shared.cards import SettingsCard, settings_row, StatusPill
 from ui.shared.forms import SegmentedToggle
@@ -52,26 +53,26 @@ def build_settings_tab(parent, app):
     rail.add_section_label(_('SETTINGS'))
 
     section_specs = [
-        ('osfmount',      '\U0001f4be   OSFMount',
+        ('osfmount',      '▣   OSFMount',
          _('OSFMount'),
          _('Tell the app where your OSFMount executable lives.')),
-        ('build',         '\U0001f527   Build',
+        ('build',         '⚙   Build',
          _('Build'),
          _('Temp folder, retry policy, and disk-image build defaults.')),
-        ('logs',          '\U0001f4c4   Logs',
+        ('logs',          '≣   Logs',
          _('Logs'),
          _('Where build/upload logs are written, and how to clear them.')),
-        ('ftp',           '\U0001f4e1   PS5 FTP',
+        ('ftp',           '◉   PS5 FTP',
          _('PS5 FTP'),
          _('Connection used by Klog, FTP browser, payload sender, '
            'and remote sync.')),
-        ('notifications', '\U0001f514   Notifications',
+        ('notifications', '△   Notifications',
          _('Notifications'),
          _('Sound and toast preferences for completed tasks.')),
-        ('theme',         '\U0001f3a8   Theme',
+        ('theme',         '▧   Theme',
          _('Theme'),
          _('The app ships with a dark theme. More variants are planned.')),
-        ('shutdown',      '\U0001f4a4   Auto-Shutdown',
+        ('shutdown',      '○   Auto-Shutdown',
          _('Auto-Shutdown'),
          _('Automatically shut down, restart, or sleep the PC after '
            'a task completes.')),
@@ -370,6 +371,36 @@ def _build_build(body, app):
             pass
     body.after(800, _poll_temp)
 
+    # ── Output folder card ──
+    card_out = SettingsCard(body, title=_('Output folder'))
+    card_out.pack(fill='x', pady=(0, 14))
+
+    _r, ctrl, act = settings_row(
+        card_out.body,
+        _('Default output folder'),
+        description=_('Where built exFAT images are written by default. '
+                      'You can still change it per build or per queue item.'),
+        with_divider=False)
+    _dark_entry(ctrl, app.output_dir, readonly=False).pack(
+        side='left', fill='x', expand=True)
+    _ghost_btn(act, _('Browse'),
+               command=app._browse_output).pack(side='left')
+
+    def _mirror_output_dir(*_):
+        """Persist edits typed straight into the field, not just Browse."""
+        try:
+            app._settings['output_dir'] = app.output_dir.get().strip()
+            app._save_settings_debounced()
+        except Exception:
+            pass
+
+    if not getattr(app, '_output_dir_trace_installed', False):
+        try:
+            app.output_dir.trace_add('write', _mirror_output_dir)
+            app._output_dir_trace_installed = True
+        except Exception:
+            pass
+
     # ── Temp folder card ──
     card1 = SettingsCard(body, title=_('Temp folder'))
     card1.pack(fill='x', pady=(0, 14))
@@ -424,6 +455,97 @@ def _build_build(body, app):
                        cursor='hand2',
                        command=app._save_extra_settings
                        ).pack(side='left', padx=(0, 12))
+
+    # ── Output naming card ──
+    card_name = SettingsCard(body, title=_('Output file naming'))
+    card_name.pack(fill='x', pady=(0, 14))
+
+    if not hasattr(app, '_output_template_var'):
+        app._output_template_var = tk.StringVar(
+            value=app._settings.get('output_name_template')
+            or DEFAULT_OUTPUT_TEMPLATE)
+
+    _r, ctrl, _act = settings_row(
+        card_name.body,
+        _('Filename template'),
+        description=_('Controls automatic output names for .exfat, .ffpkg and '
+                      'queue builds. The default appends required firmware '
+                      'when it is detected. Placeholders: %TITLE%, %VERSION%, '
+                      '%FIRMWARE%, %PPSA%. Empty values remove their brackets.'),
+        with_divider=True)
+    _dark_entry(ctrl, app._output_template_var).pack(
+        side='left', fill='x', expand=True)
+
+    # Presets row
+    _r2, ctrl2, _act2 = settings_row(
+        card_name.body,
+        _('Presets'),
+        description=_('Quick starting points — edit the template above '
+                      'afterwards if needed.'),
+        with_divider=True)
+    preset_row = tk.Frame(ctrl2, bg=COLORS['bg_2'])
+    preset_row.pack(side='left', fill='x', expand=True)
+
+    preview_var = tk.StringVar(value='')
+
+    _save_after = [None]
+
+    def _save_template():
+        _save_after[0] = None
+        raw = app._output_template_var.get().strip()
+        app._settings['output_name_template'] = raw or DEFAULT_OUTPUT_TEMPLATE
+        try:
+            save_settings(app._settings)
+        except Exception:
+            pass
+
+    def _schedule_save(*_a):
+        if _save_after[0] is not None:
+            try:
+                ctrl2.after_cancel(_save_after[0])
+            except Exception:
+                pass
+        _save_after[0] = ctrl2.after(500, _save_template)
+
+    def _update_preview(*_a):
+        template = app._output_template_var.get().strip() or DEFAULT_OUTPUT_TEMPLATE
+        try:
+            preview = preview_output_name(template)
+        except Exception:
+            preview = '(invalid template)'
+        unknown = output_template_unknown_placeholders(template)
+        if unknown:
+            preview += '    Unknown: ' + ', '.join('%' + u + '%' for u in unknown)
+        preview_var.set(preview)
+        _schedule_save()
+
+    def _apply_preset(template):
+        app._output_template_var.set(template)
+        _update_preview()
+        _save_template()
+
+    for label, template in (
+            (_('Default (FW)'), DEFAULT_OUTPUT_TEMPLATE),
+            (_('Classic'), CLASSIC_OUTPUT_TEMPLATE),
+            (_('Title (ver) (FW) (ID)'), '%TITLE% (%VERSION%) (%FIRMWARE%) (%PPSA%)'),
+            (_('Title (FW)'), '%TITLE% (%FIRMWARE%)')):
+        _ghost_btn(preset_row, label,
+                   command=lambda t=template: _apply_preset(t)
+                   ).pack(side='left', padx=(0, 6))
+
+    app._output_template_var.trace_add('write', _update_preview)
+    _update_preview()
+
+    _r3, ctrl3, _act3 = settings_row(
+        card_name.body,
+        _('Preview'),
+        description=_('Example using Marvel’s Spider-Man 2, version '
+                      '01.000.000, required FW 10.00, PPSA01234.'),
+        with_divider=False)
+    tk.Label(ctrl3, textvariable=preview_var,
+             font=FONTS['mono_sm'], bg=COLORS['bg_2'],
+             fg=COLORS['fg_2'], anchor='w').pack(
+                 side='left', fill='x', expand=True)
 
     # ── Updates card ──
     card3 = SettingsCard(body, title=_('Updates'))
@@ -516,6 +638,32 @@ def _build_build(body, app):
                    activebackground=COLORS['bg_2'], activeforeground=COLORS['fg_1'],
                    selectcolor=COLORS['bg_4'], cursor='hand2',
                    command=_save_pipeline_pref).pack(side='left')
+
+    _r, ctrl, _act = settings_row(card4.body,
+        _('Auto-tune compression workers'),
+        description=_('Scale mkpfs compression workers with installed RAM and '
+                      'CPU cores. Off by default (safe cap of 4 workers); on '
+                      'large systems this can raise the cap to 6-8.'),
+        with_divider=False)
+    if not hasattr(app, '_pfs_auto_workers_var'):
+        app._pfs_auto_workers_var = tk.BooleanVar(
+            value=app._settings.get('pfs_auto_workers', False))
+
+    def _save_pfs_auto_pref():
+        app._settings['pfs_auto_workers'] = bool(
+            app._pfs_auto_workers_var.get())
+        try:
+            save_settings(app._settings)
+        except Exception:
+            pass
+
+    tk.Checkbutton(ctrl, text=_('Auto-tune workers'),
+                   variable=app._pfs_auto_workers_var,
+                   font=FONTS['body'],
+                   bg=COLORS['bg_2'], fg=COLORS['fg_3'],
+                   activebackground=COLORS['bg_2'], activeforeground=COLORS['fg_1'],
+                   selectcolor=COLORS['bg_4'], cursor='hand2',
+                   command=_save_pfs_auto_pref).pack(side='left')
 
     # ── EXTRACTION card (issue #38): optional robocopy multithread ──
     # Applies ONLY to .exfat image extraction (OSFMount mount + robocopy).
@@ -718,7 +866,7 @@ def _build_logs(body, app):
                               highlightbackground=COLORS['border_2'],
                               highlightthickness=1)
                 es.pack(fill='x')
-                tk.Label(es, text='\U0001f4c4',
+                tk.Label(es, text='≣',
                          font=('Segoe UI', 26),
                          bg=COLORS['bg_2'], fg=COLORS['fg_6']
                          ).pack(pady=(22, 4))
@@ -789,7 +937,7 @@ def _build_logs(body, app):
                 ).pack(side='left', fill='x', expand=True)
     _ghost_btn(act, _('Browse'),
                command=app._browse_logs_dir).pack(side='left', padx=(0, 4))
-    _accent_btn(act, '\U0001f4c2  ' + _('Open'),
+    _accent_btn(act, '▤  ' + _('Open'),
                 command=app._open_logs_dir).pack(side='left')
 
     # Stats + clear
@@ -985,9 +1133,9 @@ def _build_ftp(body, app):
                        app._ftp_status_lbl.config(
                            fg=COLORS['success_hi'] if ok else COLORS['danger_hi']))
                )).pack(side='left', padx=(0, 6))
-    _ghost_btn(btn_row, '\U0001f4c1  ' + _('Browse PS5'),
+    _ghost_btn(btn_row, '▤  ' + _('Browse PS5'),
                command=app._show_ps5_browser).pack(side='left', padx=(0, 6))
-    _ghost_btn(btn_row, '\U0001f3ae  ' + _('Games on PS5'),
+    _ghost_btn(btn_row, '◉  ' + _('Games on PS5'),
                command=app._show_installed_games).pack(side='left', padx=(0, 6))
 
     # Cancel-upload button — same legacy attribute name. Not packed by
@@ -1120,11 +1268,12 @@ def _build_theme(body, app):
         cards[value] = (c, active)
         return c
 
-    _theme_card(0, 'dark', _('Dark Purple'),
-                _('Deep navy surfaces with the purple accent \u2014 '
-                  'the standard look.'),
+    _theme_card(0, 'dark', _('Dark'),
+                _('Deep navy surfaces with the PlayStation blue accent '
+                  '\u2014 the standard look.'),
                 [COLORS['bg_1'], COLORS['bg_3'], COLORS['accent'],
-                 COLORS['purple'], COLORS['teal'], COLORS['success']])
+                 COLORS['accent_hi'], COLORS['fg_3'],
+                 COLORS['success']])
     # v3.6.3: the light variant was removed. The app's UI is built on the
     # COLORS{} design-token system (2,500+ usages); the old _toggle_theme
     # only repainted a handful of legacy globals, so "Light" produced a
@@ -1163,9 +1312,9 @@ def _build_theme(body, app):
              font=(FONTS['mono_sm'][0], 8, 'bold'),
              bg=COLORS['bg_2'], fg=COLORS['fg_5']
              ).pack(side='left', padx=(0, 14))
-    for key in ('bg_1', 'bg_3', 'accent', 'purple', 'teal',
+    for key in ('bg_1', 'bg_3', 'accent', 'accent_hi',
                 'success', 'warn', 'danger'):
-        sw = tk.Frame(prow, bg=COLORS.get(key, '#000'),
+        sw = tk.Frame(prow, bg=COLORS.get(key, COLORS['bg_0']),
                       width=26, height=18,
                       highlightbackground=COLORS['border_3'],
                       highlightthickness=1)
@@ -1225,9 +1374,9 @@ def _build_shutdown(body, app):
                 ('_shutdown_on_ftp_var', 'FTP'),
                 ('_shutdown_on_pfs_var', 'PFS')]
     action_names = {'none': _('None'),
-                    'shutdown': '\u23fb ' + _('Shut down'),
-                    'restart': '\U0001f504 ' + _('Restart'),
-                    'sleep': '\U0001f4a4 ' + _('Sleep')}
+                    'shutdown': '■ ' + _('Shut down'),
+                    'restart': '↻ ' + _('Restart'),
+                    'sleep': '○ ' + _('Sleep')}
 
     def _mirror_shutdown(*_a):
         act = 'none'

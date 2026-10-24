@@ -230,7 +230,7 @@ def build_pfs_tab(parent, app):
     attach_scroll(canvas)
 
     # ── Page head ────────────────────────────────────────────────────
-    head = page_head(inner, '\U0001f5dc',
+    head = page_head(inner, '▣',
                      'Build PFS Image',
                      'Pack a game dump into a .ffpfs / .ffpfsc image for ShadowMount+ / MicroMount.')
     head.pack(fill='x', padx=24, pady=(14, 8))
@@ -298,10 +298,10 @@ def build_pfs_tab(parent, app):
     # Dump-direct PFS build was removed \u2014 only the stable exFAT/ffpkg \u2192 .ffpfsc
     # route remains (Convert), plus Extract.
     tile_convert = _make_path_tile(sel_frame, 'convert',
-        '\U0001f504', 'Build from .exfat / .ffpkg',
+        '↻', 'Build from .exfat / .ffpkg',
         'Already have one? Pack it straight into a mountable .ffpfsc \u2014 no rebuild')
     tile_extract = _make_path_tile(sel_frame, 'extract',
-        '\U0001f4e4', 'Extract a .ffpfs / .ffpfsc image',
+        '⇧', 'Extract a .ffpfs / .ffpfsc image',
         'Unpack a PFS image to a folder \u2014 edit then rebuild')
 
     def _refresh_tiles():
@@ -358,7 +358,7 @@ def build_pfs_tab(parent, app):
                       highlightthickness=1, highlightbackground=COLORS['teal'])
     _rec_b.pack(fill='x', padx=24, pady=(0, 12))
     tk.Label(_rec_b,
-             text=('\u2b50  Most reliable: build an .exfat (exFAT tab) or .ffpkg '
+             text=('◈  Most reliable: build an .exfat (exFAT tab) or .ffpkg '
                    '(ffpkg tab) first, then use Convert to pack it into a .ffpfsc. '
                    'Only some games mount when built straight from a dump \u2014 almost '
                    'all work via exFAT/ffpkg \u2192 Convert.'),
@@ -369,7 +369,7 @@ def build_pfs_tab(parent, app):
     card_b = tk.Frame(panel_build, bg=COLORS['bg_2'],
                       highlightthickness=1, highlightbackground=COLORS['border_2'])
     card_b.pack(fill='x', padx=24, pady=(0, 14))
-    _card_head(card_b, '\U0001f5c2', 'Dump folder  \u2192  .ffpfs / .ffpfsc',
+    _card_head(card_b, '▤', 'Dump folder  \u2192  .ffpfs / .ffpfsc',
                'Pick a format below \u2014 uncompressed (one pass) or compressed container')
     body_b = tk.Frame(card_b, bg=COLORS['bg_2'])
     body_b.pack(fill='both', expand=True, padx=24, pady=(4, 18))
@@ -463,7 +463,7 @@ def build_pfs_tab(parent, app):
                         cover_lbl_b.config(image=photo, text='')
                     else:
                         state_b.pop('cover_img', None)
-                        cover_lbl_b.config(image='', text='\U0001f3ae')
+                        cover_lbl_b.config(image='', text='◉')
                     cover_lbl_b.pack(pady=(4, 4))
                 except Exception:
                     pass
@@ -486,7 +486,7 @@ def build_pfs_tab(parent, app):
              padx=12, pady=(8, 2))
     cover_row_b = tk.Frame(cover_panel_b, bg=COLORS['bg_3'])
     cover_row_b.pack(fill='x', pady=(0, 10))
-    cover_lbl_b = tk.Label(cover_row_b, text='\U0001f3ae', bg=COLORS['bg_3'],
+    cover_lbl_b = tk.Label(cover_row_b, text='◉', bg=COLORS['bg_3'],
                            fg=COLORS['fg_5'], font=(FONTS['mono_sm'][0], 34))
     cover_lbl_b.pack(pady=(4, 4))
 
@@ -566,7 +566,7 @@ def build_pfs_tab(parent, app):
     _apply_fmt()   # set initial description + button label for default format
     btn_add_q = make_themed_button(btn_row_b, text='Add to queue',
                                 command=lambda: _add_to_queue(),
-                                kind='primary', icon='\u2795',
+                                kind='primary', icon='+',
                                 font_size=10, padx=16, pady=9)
     btn_add_q.pack(side='left', padx=(8, 0))
 
@@ -602,7 +602,7 @@ def build_pfs_tab(parent, app):
     btn_run_q.pack(side='left')
     btn_pause_q = make_themed_button(qbtns, text='Pause',
                                 command=lambda: _toggle_pause(),
-                                kind='ghost', icon='\u23f8',
+                                kind='ghost', icon='‖',
                                 font_size=10, padx=14, pady=8)
     btn_pause_q.pack(side='left', padx=(8, 0))
     btn_clear_q = make_themed_button(qbtns, text='Clear',
@@ -1270,7 +1270,7 @@ def build_pfs_tab(parent, app):
     card_c = tk.Frame(panel_convert, bg=COLORS['bg_2'],
                       highlightthickness=1, highlightbackground=COLORS['border_2'])
     card_c.pack(fill='x', padx=24, pady=(0, 14))
-    _card_head(card_c, '\U0001f504', 'Build .ffpfsc from .exfat / .ffpkg',
+    _card_head(card_c, '↻', 'Build .ffpfsc from .exfat / .ffpkg',
                'Pick an existing image \u2014 it is packed straight into a compressed PFS container, no extraction')
     body_c = tk.Frame(card_c, bg=COLORS['bg_2'])
     body_c.pack(fill='x', padx=24, pady=(4, 18))
@@ -1804,7 +1804,7 @@ def build_pfs_tab(parent, app):
                                 app._trigger_shutdown('pfs')
                             except Exception:
                                 pass
-                            msg = '\u2705  %s\n\nImage:  %s\n' % (_ti, _act)
+                            msg = '✓  %s\n\nImage:  %s\n' % (_ti, _act)
                             if _i:
                                 msg += 'Size:   %s \u2192 %s   (%.1f%% smaller)\n' % (
                                     _fmt_size(_i), _fmt_size(_o), _p)
@@ -2087,7 +2087,7 @@ def build_pfs_tab(parent, app):
     card_e = tk.Frame(panel_extract, bg=COLORS['bg_2'],
                       highlightthickness=1, highlightbackground=COLORS['border_2'])
     card_e.pack(fill='x', padx=24, pady=(0, 14))
-    _card_head(card_e, '\U0001f4e4', 'Extract .ffpfs / .ffpfsc  \u2192  folder',
+    _card_head(card_e, '⇧', 'Extract .ffpfs / .ffpfsc  \u2192  folder',
                'Unpack a PFS image so you can edit files, then rebuild from the Build tab')
     body_e = tk.Frame(card_e, bg=COLORS['bg_2'])
     body_e.pack(fill='x', padx=24, pady=(4, 18))

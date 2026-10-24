@@ -27,7 +27,7 @@ class EmptyState(tk.Frame):
     """A centered empty-list placeholder.
 
     Usage:
-        es = EmptyState(parent, icon="\U0001f4e6",
+        es = EmptyState(parent, icon="▣",
                         title="No images built yet",
                         description="Build an image to see it here.")
         es.pack(fill="both", expand=True)
@@ -118,7 +118,7 @@ if __name__ == "__main__":
              bg=COLORS["bg_1"], fg=COLORS["fg_4"],
              font=FONTS["body"]).pack(anchor="w")
 
-    es = EmptyState(root, icon="\U0001f4da",
+    es = EmptyState(root, icon="\u25a4",
                     title="No folders added yet",
                     description="Add a folder to scan for game dumps.")
     es.pack(fill="both", expand=True, padx=20, pady=(0, 20))

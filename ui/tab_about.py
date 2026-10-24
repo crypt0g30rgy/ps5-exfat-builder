@@ -35,37 +35,37 @@ from ui.shared.scroll import attach_scroll
 # ─────────────────────────────────────────────────────────────────────────
 _GITHUB_CREDITS = [
     {
-        'emoji':  '\u26a1',  # ⚡
+        'emoji':  '◈',  # ◈
         'name':   'Nazky',
         'role':   'PS5 Auto Backport pipeline',
         'url':    'https://github.com/Nazky',
     },
     {
-        'emoji':  '\U0001f527',  # 🔧
+        'emoji':  '⚙',  # ⚙
         'name':   'BestPig',
         'role':   'PS5 backport research & BackPork payload',
         'url':    'https://github.com/BestPig',
     },
     {
-        'emoji':  '\U0001f4be',  # 💾
+        'emoji':  '▣',  # ▣
         'name':   'drakmor',
         'role':   'ShadowMountPlus — exFAT creation reference',
         'url':    'https://github.com/drakmor',
     },
     {
-        'emoji':  '\U0001f4e6',  # 📦
+        'emoji':  '▣',  # ▣
         'name':   'SvenGDK',
         'role':   'UFS2Tool — the ffpkg builder backend',
         'url':    'https://github.com/SvenGDK',
     },
     {
-        'emoji':  '\U0001f4cb',  # 📋
+        'emoji':  '≣',  # ≣
         'name':   'ps5-payload-dev',
         'role':   'klogsrv — PS5 kernel log streamer',
         'url':    'https://github.com/ps5-payload-dev',
     },
     {
-        'emoji':  '\U0001f3af',  # 🎯
+        'emoji':  '◎',  # ◎
         'name':   'NookieAI & stonemodder',
         'role':   'Inspiration (Porkfolio)',
         'url':    None,  # no shared GitHub
@@ -275,7 +275,7 @@ def build_about_tab(parent, app):
                     highlightthickness=1)
     tile.pack(side='left', padx=(0, 16))
     tile.pack_propagate(False)
-    tk.Label(tile, text='\U0001f4bf', font=(FONTS['body'][0], 22),
+    tk.Label(tile, text='◉', font=(FONTS['body'][0], 22),
              bg=COLORS['accent_08'], fg=COLORS['accent_hi']
              ).pack(expand=True)
 
@@ -314,7 +314,7 @@ def build_about_tab(parent, app):
     cred_inner.pack(fill='both', expand=True, padx=16, pady=12)
 
     tk.Label(cred_inner,
-             text='\U0001f31f  ' + _('Contributors'),
+             text='◈  ' + _('Contributors'),
              font=(FONTS['h2'][0], 12, 'bold'),
              bg=COLORS['bg_2'], fg=COLORS['fg_0']
              ).pack(anchor='w')
@@ -339,7 +339,7 @@ def build_about_tab(parent, app):
     sup_inner.pack(fill='both', expand=True, padx=16, pady=12)
 
     tk.Label(sup_inner,
-             text='\u2764  ' + _('Supporters'),
+             text=_('Supporters'),
              font=(FONTS['h2'][0], 12, 'bold'),
              bg=COLORS['bg_2'], fg=COLORS['fg_0']
              ).pack(anchor='w')
@@ -438,13 +438,12 @@ def build_about_tab(parent, app):
     txt_sb.pack(side='right', fill='y')
     txt.pack(side='left', fill='both', expand=True)
 
-    # Tag setup for nicer look
+    # Tag setup for nicer look. No tag font: unset tags inherit the
+    # widget font, so these lines follow the responsive type scale.
     txt.tag_configure('name',
-                       foreground=COLORS['fg_1'],
-                       font=FONTS['body'])
+                       foreground=COLORS['fg_1'])
     txt.tag_configure('anon',
-                       foreground=COLORS['fg_3'],
-                       font=FONTS['body'])
+                       foreground=COLORS['fg_3'])
 
     # Always render the list — _load_donors() is guaranteed to return
     # valid data (external → baked-in → module fallback). Users never
@@ -489,7 +488,7 @@ def build_about_tab(parent, app):
         except Exception:
             pass
 
-    tk.Button(foot, text='\u2764  ' + _('Support the tool'),
+    tk.Button(foot, text=_('Support the tool'),
               font=(FONTS['button'][0], 9, 'bold'),
               bg=COLORS['accent'], fg=COLORS['fg_0'],
               activebackground=COLORS.get('accent_hi', COLORS['accent']),
@@ -504,7 +503,7 @@ def build_about_tab(parent, app):
         except Exception:
             pass
 
-    tk.Button(foot, text='\U0001f41b  ' + _('Report Issue'),
+    tk.Button(foot, text='△  ' + _('Report Issue'),
               font=(FONTS['button'][0], 9, 'bold'),
               bg=COLORS['bg_3'], fg=COLORS['fg_1'],
               activebackground=COLORS['bg_4'], activeforeground=COLORS['fg_0'],

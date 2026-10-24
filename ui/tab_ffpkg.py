@@ -6,29 +6,29 @@ Step 9 (v2.1.1): full refactor against preview/ffpkg-tab-redesign.html.
 Layout:
 
     ┌─ LEFT (Build form) ──────────┬─ RIGHT (Queue & progress) ─────────┐
-    │ [📦 banner — UFS2 / .ffpkg]  │ ┌─ progress card ─────────────────┐ │
+    │ [▣ banner — UFS2 / .ffpkg]  │ ┌─ progress card ─────────────────┐ │
     │ [● .NET 8 detected v8.0.11]  │ │ Building Returnal · 62%         │ │
     │ ┌─ drop zone ──────────────┐ │ │ [████████████─────]              │ │
-    │ │ 📂 Drop game folder…     │ │ │ 35.2 / 56.8 GB · 412 MB/s · ETA │ │
+    │ │ ▤ Drop game folder…     │ │ │ 35.2 / 56.8 GB · 412 MB/s · ETA │ │
     │ └─────────────────────────┘ │ └─────────────────────────────────┘ │
     │ ┌─ DetectedGameStrip(teal)─┐ │ ┌─ Queue card ────────────────────┐ │
-    │ │ 🎮 Returnal              │ │ │ Queue          3 items · 195 GB │ │
+    │ │ ◉ Returnal              │ │ │ Queue          3 items · 195 GB │ │
     │ │ CUSA-22871 v2.10 SDK 4   │ │ │ ┌────────────────────────────┐ │ │
     │ └─────────────────────────┘ │ │ │ 1 Returnal     56.8GB ●Build│ │ │
     │ Output directory             │ │ │ 2 Demon's Souls 62.4GB Queued│ │ │
     │ [...........] [Browse]      │ │ │ 3 Ratchet      76.5GB Queued│ │ │
     │ Output filename · auto       │ │ │ ✓ Astros       4.2GB  Done  │ │ │
-    │ [📄 game.ffpkg]              │ │ └────────────────────────────┘ │ │
+    │ [≣ game.ffpkg]              │ │ └────────────────────────────┘ │ │
     │ ┌─ UFS2 parameters card ───┐ │ └─────────────────────────────────┘ │
-    │ │ 🔒 customise in Advanced │ │                                      │
+    │ │ ■ customise in Advanced │ │                                      │
     │ │ -O 2  UFS version    2   │ │                                      │
     │ │ -b    Block size     32k │ │                                      │
     │ │ -f    Fragment size  4k  │ │                                      │
     │ │ -m    Min free %     8   │ │                                      │
-    │ │ -S    Sector size    512 🔒│                                      │
+    │ │ -S    Sector size    512 ■│                                      │
     │ │ -i    Inode density  4k  │ │                                      │
     │ └────────────────────────┘ │ │                                      │
-    │ [+ Add to queue][🔨 Build All]                                      │
+    │ [+ Add to queue][▦ Build All]                                      │
     └─────────────────────────────┴─────────────────────────────────────┘
 
 Backwards compat: every `app._ffpkg_*` attribute the existing 50+ callbacks
@@ -92,7 +92,7 @@ def _build_left_column(body, app):
              ).grid(row=0, column=0, sticky='nse')
 
     # ── Column header (Build-tab spacious style) ──
-    head = page_head(left, '\U0001f4e6',
+    head = page_head(left, '▣',
                      _('Build ffpkg image'),
                      _('Pick a game folder and queue the build.'))
     head.pack(fill='x', padx=24, pady=(14, 12))
@@ -152,7 +152,7 @@ def _build_left_column(body, app):
     banner.pack(fill='x', pady=(0, 12))
     inner_b = tk.Frame(banner, bg=COLORS['teal_bg'])
     inner_b.pack(fill='x', padx=12, pady=10)
-    tk.Label(inner_b, text='\U0001f4e6',
+    tk.Label(inner_b, text='▣',
              font=(FONTS['body'][0], 12),
              bg=COLORS['teal_bg'], fg=COLORS['teal']
              ).pack(side='left', padx=(0, 10))
@@ -271,7 +271,7 @@ def _build_left_column(body, app):
                 ).pack(side='left', fill='x', expand=True, padx=(0, 6))
 
     app._ffpkg_build_btn = _teal_btn(actions,
-        '\U0001f528  ' + _('Build All'),
+        '▦  ' + _('Build All'),
         command=app._ffpkg_run_queue)
     app._ffpkg_build_btn.pack(side='left')
 
@@ -304,7 +304,7 @@ def _build_params_card(parent, app):
                  anchor='w'
                  ).grid(row=0, column=1, sticky='w')
 
-        val_text = ' \U0001f512' if locked else ''
+        val_text = ' ■' if locked else ''
         if isinstance(value_var, tk.StringVar):
             val_lbl = tk.Label(row, textvariable=value_var,
                                font=(FONTS['mono'][0], 10, 'bold'),
@@ -352,7 +352,7 @@ def _build_right_column(body, app):
     right.grid(row=0, column=1, sticky='nsew')
 
     # ── Column header (Build-tab spacious style) ──
-    head = page_head(right, '\U0001f4ca',
+    head = page_head(right, '▦',
                      _('Queue & build progress'),
                      _('Live status and build queue.'))
     head.pack(fill='x', padx=24, pady=(14, 12))
@@ -370,7 +370,7 @@ def _build_right_column(body, app):
     prog_card = Card(pad,
                      title=_('Build progress'),
                      subtitle=_('Live status appears here once a build starts.'),
-                     icon='\U0001f4ca')
+                     icon='▦')
     prog_card.pack(fill='x', pady=(0, 14))
 
     # Step + percentage row
@@ -430,7 +430,7 @@ def _build_right_column(body, app):
 
     head_right = tk.Frame(q_head, bg=COLORS['bg_2'])
     head_right.pack(side='right')
-    tk.Button(head_right, text='\U0001f5d1  ' + _('Clear'),
+    tk.Button(head_right, text='✕  ' + _('Clear'),
               font=FONTS['meta'],
               bg=COLORS['bg_3'], fg=COLORS['fg_3'],
               activebackground=COLORS['bg_4'],

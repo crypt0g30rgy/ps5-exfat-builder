@@ -3,7 +3,7 @@
 Layout:
 
     ┌─ Page head (badge + title + subtitle) ────────────────────────────┐
-    │ [💿]  Convert images                                              │
+    │ [◉]  Convert images                                              │
     │       Convert between .exfat and .ffpkg                           │
     ├───────────────────────────────────────────────────────────────────┤
     │ [i] Conversion mounts the source, runs UFS2Tool newfs against...  │
@@ -34,13 +34,13 @@ the dump in, then dismounts.
 
 import os
 import re
-import subprocess
 import threading
 import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from tkinter_theme import COLORS, FONTS
+from ui.process_supervisor import run_process
 from ui.shared.page_head import (
     make_themed_button, info_banner, page_head, field_block)
 from ui.shared.hero import GameHero
@@ -114,7 +114,7 @@ def build_convert_tab(parent, app):
     attach_scroll(canvas)
 
     # ── Page head with badge ──
-    head = page_head(inner, '\U0001f4bf',
+    head = page_head(inner, '◉',
                      'Convert images',
                      'Convert between .exfat and .ffpkg.')
     head.pack(fill='x', padx=24, pady=(14, 12))
@@ -158,7 +158,7 @@ def build_convert_tab(parent, app):
                            ('Output Format', 'dst'),
                            ('Size', 'size'),
                            ('Status', 'status')],
-                    cover_glyph='\U0001f4bf', cover_size=120)
+                    cover_glyph='◉', cover_size=120)
     hero_packed = {'on': False}
 
     def _humansize(n):
@@ -349,75 +349,73 @@ def build_convert_tab(parent, app):
         if label:
             _log(label)
         CREATE_NO_WINDOW = 0x08000000
+
+        def _on_line(ln):
+            _log(ln)
+            if progress_cb is not None:
+                try:
+                    progress_cb(ln)
+                except Exception:
+                    pass
+
+        # The supervisor waits on process exit (not pipe EOF), streams
+        # merged stdout/stderr, and kills the whole process tree if the
+        # tool goes silent for 45 minutes, so a wedged conversion can no
+        # longer hang the tab (or the app) indefinitely.
         try:
-            kwargs = ({'creationflags': CREATE_NO_WINDOW}
-                      if os.name == 'nt' else {})
-            p = subprocess.Popen(cmd,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT,
-                                  text=True, errors='replace',
-                                  **kwargs)
-            for ln in p.stdout:
-                _log(ln.rstrip())
-                if progress_cb is not None:
-                    try:
-                        progress_cb(ln.rstrip())
-                    except Exception:
-                        pass
-            p.wait()
-            return p.returncode
-        except FileNotFoundError:
-            _log('Command not found: ' + cmd[0])
-            return -1
+            result = run_process(
+                cmd,
+                on_line=_on_line,
+                encoding=('mbcs' if os.name == 'nt' else 'utf-8'),
+                errors='replace',
+                creationflags=(CREATE_NO_WINDOW if os.name == 'nt' else None),
+                idle_timeout=45 * 60,
+                warn_after=5 * 60,
+                on_warning=lambda idle: _log(
+                    'No output for %d min — still waiting (conversion '
+                    'may be busy on a large file).'
+                    % max(1, int(idle // 60))),
+                poll_interval=0.5,
+            )
         except Exception as e:
             _log('Run error: ' + str(e))
             return -1
+        if result.error:
+            _log('Command failed to start: ' + result.error)
+            return -1
+        if result.timed_out:
+            _log('Conversion stopped: ' + result.summary())
+            return 124
+        return result.returncode if result.returncode is not None else -1
 
     def _run_with_timeout(cmd, timeout_s):
         """Run a subprocess with a hard timeout, returning rc.
 
-        Used ONLY for the OSFMount attach in the exFAT → ffpkg flow — it does
-        NOT stream stdout (the mount needs a bounded wait, not progress
-        parsing, so this stays separate from `_run`, which the newfs progress
-        path depends on). On timeout the process is terminated (then killed if
-        needed) and a sentinel rc of -2 is returned so the caller's existing
-        `if rc != 0` failure branch handles it. Output is captured and logged.
+        Used ONLY for the OSFMount attach in the exFAT → ffpkg flow.  The
+        shared supervisor enforces the deadline (killing the whole process
+        tree if needed) so a wedged driver can never block the worker.
+        Output is streamed to the log as it arrives.  A timeout returns the
+        sentinel rc -2 so the caller's existing `if rc != 0` branch handles
+        it; a launch failure returns -1.
         """
-        CREATE_NO_WINDOW = 0x08000000
-        try:
-            kwargs = ({'creationflags': CREATE_NO_WINDOW}
-                      if os.name == 'nt' else {})
-            p = subprocess.Popen(cmd,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT,
-                                  text=True, errors='replace',
-                                  **kwargs)
-            try:
-                out, _err = p.communicate(timeout=timeout_s)
-                if out:
-                    for ln in out.splitlines():
-                        _log(ln.rstrip())
-                return p.returncode
-            except subprocess.TimeoutExpired:
-                # Bounded wait exceeded — terminate, then kill if it lingers.
-                _log('Mount timed out after %ds — terminating OSFMount.'
-                     % timeout_s)
-                try:
-                    p.terminate()
-                    try:
-                        p.communicate(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        p.kill()
-                        p.communicate(timeout=5)
-                except Exception as e:
-                    _log('Error terminating timed-out mount: ' + str(e))
-                return -2  # sentinel: treated as failure by `if rc != 0`
-        except FileNotFoundError:
-            _log('Command not found: ' + cmd[0])
+        result = run_process(
+            cmd,
+            on_line=lambda ln: _log(ln.rstrip()),
+            idle_timeout=None,
+            warn_after=None,
+            hard_timeout=timeout_s,
+            poll_interval=0.25,
+            creationflags=0x08000000 if os.name == 'nt' else 0,
+            tail_lines=100,
+        )
+        if result.error:
+            _log('Command failed to start: ' + result.error)
             return -1
-        except Exception as e:
-            _log('Run (timeout) error: ' + str(e))
-            return -1
+        if result.timed_out:
+            _log('Mount timed out after %ds — terminating OSFMount.'
+                 % timeout_s)
+            return -2
+        return result.returncode if result.returncode is not None else -1
 
     # ── Main conversion ──
     def _do_exfat_to_ffpkg():
@@ -1149,32 +1147,26 @@ def build_convert_tab(parent, app):
                                mount_letter, '/FS:exFAT', '/Q', '/Y',
                                '/V:']
                     _log('Running: ' + ' '.join(fmt_cmd))
-                    try:
-                        CREATE_NO_WINDOW = 0x08000000
-                        kwargs = ({'creationflags': CREATE_NO_WINDOW}
-                                  if os.name == 'nt' else {})
-                        fp = subprocess.Popen(fmt_cmd,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT,
-                            text=True, errors='replace', **kwargs)
-                        try:
-                            fp.stdin.write('\n\n\n')
-                            fp.stdin.flush()
-                            fp.stdin.close()
-                        except Exception:
-                            pass
-                        for ln in fp.stdout:
-                            _log(ln.rstrip())
-                        fp.wait(timeout=180)
-                        rc = fp.returncode
-                    except subprocess.TimeoutExpired:
-                        try:
-                            fp.kill()
-                        except Exception:
-                            pass
+                    CREATE_NO_WINDOW = 0x08000000
+                    fmt_res = run_process(
+                        fmt_cmd,
+                        input_text='\n\n\n',
+                        on_line=lambda ln: _log(ln.rstrip()),
+                        idle_timeout=None,
+                        warn_after=None,
+                        hard_timeout=180,
+                        poll_interval=0.25,
+                        creationflags=(CREATE_NO_WINDOW
+                                       if os.name == 'nt' else 0),
+                        tail_lines=100,
+                    )
+                    if fmt_res.error:
+                        raise RuntimeError(
+                            'format could not start: ' + fmt_res.error)
+                    if fmt_res.timed_out:
                         raise RuntimeError(
                             'format command timed out after 3 minutes.')
+                    rc = fmt_res.returncode
                     if rc != 0:
                         raise RuntimeError(
                             'format /FS:exFAT failed (rc=%d)' % rc)

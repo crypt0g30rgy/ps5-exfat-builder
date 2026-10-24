@@ -171,7 +171,7 @@ class DumpRenameTab:
         # Page head
         head = tk.Frame(parent, bg=COLORS['bg_1'])
         head.pack(fill='x', padx=24, pady=(14, 6))
-        tk.Label(head, text='\u270f  ' + _('Dump Rename'),
+        tk.Label(head, text='✎  ' + _('Dump Rename'),
                  font=(FONTS['h2'][0], 14, 'bold'),
                  bg=COLORS['bg_1'], fg=COLORS['fg_0']
                  ).pack(side='left')
@@ -293,11 +293,11 @@ class DumpRenameTab:
                  highlightthickness=1
                  ).pack(side='left', fill='x', expand=True, ipady=4)
 
-        _ghost_btn(row, '\U0001f4c1  ' + _('Browse'),
+        _ghost_btn(row, '▤  ' + _('Browse'),
                    command=self._browse_src
                    ).pack(side='left', padx=(8, 0))
 
-        _accent_btn(row, '\U0001f50d  ' + _('Scan'),
+        _accent_btn(row, '⌕  ' + _('Scan'),
                     command=self._do_scan
                     ).pack(side='left', padx=(6, 0))
 
@@ -434,7 +434,7 @@ class DumpRenameTab:
 
         # Big rename button — label tracks the live selection count
         self._rename_btn = _accent_btn(
-            foot, '\u270f  ' + _('Rename selected'),
+            foot, '✎  ' + _('Rename selected'),
             command=self._do_rename, big=True)
         self._rename_btn.pack(fill='x')
 
@@ -550,10 +550,10 @@ class DumpRenameTab:
         version  = m.get('version', '') or ''
 
         # Confidence pip colour (matches the legacy mapping)
-        pip_color = {'green':  COLORS.get('ok',   '#4caf50'),
-                     'yellow': COLORS.get('warn', '#f0a93a'),
-                     'red':    COLORS.get('err',  '#e0584b')
-                     }.get(confidence, COLORS.get('warn', '#f0a93a'))
+        pip_color = {'green':  COLORS.get('ok',   '#42C786'),
+                     'yellow': COLORS.get('warn', '#F0B64A'),
+                     'red':    COLORS.get('err',  '#F16C75')
+                     }.get(confidence, COLORS.get('warn', '#F0B64A'))
 
         # ── Row container ──
         row = tk.Frame(self._list_inner, bg=COLORS['bg_3'])
@@ -584,7 +584,7 @@ class DumpRenameTab:
         cover_lbl = tk.Label(inner,
                               bg=COLORS['bg_3'],
                               fg=COLORS['fg_4'],
-                              text='\U0001f3ae',  # placeholder gamepad
+                              text='◉',  # placeholder gamepad
                               font=(FONTS['body'][0], 22),
                               width=8,            # in chars; ~96 px
                               height=6,           # in lines; ~128 px
@@ -679,7 +679,7 @@ class DumpRenameTab:
         # Highlight when the rename is a no-op (already matches)
         is_noop = (orig_name == proposed)
         new_color = COLORS.get('fg_4', '#888') if is_noop \
-            else COLORS.get('accent', '#5b8cff')
+            else COLORS.get('accent', '#0070D1')
         tk.Label(new_row, text=proposed,
                  font=(FONTS['body'][0], 10, 'bold'),
                  bg=COLORS['bg_2'], fg=new_color,
@@ -790,10 +790,10 @@ class DumpRenameTab:
             btn = getattr(self, '_rename_btn', None)
             if btn is not None and btn.winfo_exists():
                 if selected > 0:
-                    btn.config(text='\u270f  ' + _('Rename %d folder(s)')
+                    btn.config(text='✎  ' + _('Rename %d folder(s)')
                                % selected)
                 else:
-                    btn.config(text='\u270f  ' + _('Rename selected'))
+                    btn.config(text='✎  ' + _('Rename selected'))
         except Exception:
             pass
 
@@ -845,14 +845,14 @@ def _ghost_btn(parent, text, command):
 
 
 def _accent_btn(parent, text, command, big=False):
-    accent = COLORS.get('accent', '#5b8cff')
+    accent = COLORS.get('accent', '#0070D1')
     return tk.Button(parent, text=text,
                      font=(FONTS['button'][0],
                            11 if big else 9,
                            'bold'),
-                     bg=accent, fg='#0a0a0a',
+                     bg=accent, fg=COLORS['fg_0'],
                      activebackground=accent,
-                     activeforeground='#0a0a0a',
+                     activeforeground=COLORS['fg_0'],
                      relief='flat', bd=0,
                      padx=16,
                      pady=10 if big else 6,

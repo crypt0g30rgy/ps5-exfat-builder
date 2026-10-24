@@ -29,11 +29,11 @@ from ui.shared.empty_state import EmptyState
 # Same badge schemes as ui/shared/hero.GameHero so the two hero types
 # read as one family.
 _BADGE = {
-    'ready':   (COLORS['success'], '#0a0a0a'),
+    'ready':   (COLORS['success'], COLORS['bg_0']),
     'wait':    (COLORS['bg_4'],    COLORS['fg_3']),
-    'busy':    (COLORS['accent'],  '#0a0a0a'),
-    'warn':    (COLORS['warn'],    '#0a0a0a'),
-    'fail':    (COLORS['danger'],  COLORS['fg_0']),
+    'busy':    (COLORS['accent'],  COLORS['fg_0']),
+    'warn':    (COLORS['warn'],    COLORS['bg_0']),
+    'fail':    (COLORS['danger'],  COLORS['bg_0']),
 }
 
 
@@ -43,7 +43,7 @@ class StatStrip(tk.Frame):
     stats: ordered list of (label, key) pairs.
     Use `.set(key, value, warn=False)` to update a cell. Values default
     to an em-dash. Cell styling is identical to GameHero's strip:
-    uppercase mono label in fg_5, bold mono value in teal (warn flips
+    uppercase mono label in fg_5, bold mono value in primary text (warn flips
     the value to the warn token).
     """
 
@@ -61,7 +61,7 @@ class StatStrip(tk.Frame):
             v = tk.StringVar(value='\u2014')
             val = tk.Label(cell, textvariable=v,
                            font=(FONTS['mono_sm'][0], 11, 'bold'),
-                           bg=bg, fg=COLORS['teal'], anchor='w')
+                           bg=bg, fg=COLORS['fg_0'], anchor='w')
             val.pack(anchor='w', pady=(2, 0))
             self._cells[key] = (v, val)
 
@@ -77,7 +77,7 @@ class StatStrip(tk.Frame):
             elif ok:
                 val.config(fg=COLORS['success_hi'])
             else:
-                val.config(fg=COLORS['teal'])
+                val.config(fg=COLORS['fg_0'])
         except Exception:
             pass
 
@@ -119,7 +119,7 @@ class ControlHero(tk.Frame):
     """
 
     def __init__(self, parent, title='', subtitle='', stats=(),
-                 icon='\U0001f3ae', icon_size=64):
+                 icon='\u25c9', icon_size=64):
         super().__init__(parent, bg=COLORS['bg_2'],
                          highlightbackground=COLORS['border_2'],
                          highlightthickness=1)

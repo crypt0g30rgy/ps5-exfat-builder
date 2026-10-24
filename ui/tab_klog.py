@@ -8,12 +8,12 @@ Layout (top to bottom, single column, full width):
     [▣]  Klog Monitor                          [● CONNECTED · IP · uptime]
          Stream the PS5 kernel log live…       [1,284 info · 17 warn · 3 err]
     ┌─ Connection bar ──────────────────────────────────────────────────┐
-    │ IP [192.168.0.173]  Port [3232]  [▶Connect] [■Disconnect] [⏸Pause]│
+    │ IP [192.168.0.173]  Port [3232]  [▶Connect] [■Disconnect] [‖Pause]│
     │                                              Default port: 3232 ··│
     └────────────────────────────────────────────────────────────────────┘
-    [🗑 Clear] [💾 Export] (Auto-scroll) (Word wrap) (Timestamps)  1,304 ln
+    [✕ Clear] [▣ Export] (Auto-scroll) (Word wrap) (Timestamps)  1,304 ln
     ┌─ Filter ───────────────────────────────────────────────────────────┐
-    │ 🔍 [Filter — type to highlight…]                          [Clear]  │
+    │ ⌕ [Filter — type to highlight…]                          [Clear]  │
     └────────────────────────────────────────────────────────────────────┘
     ┌─ ConsoleView (terminal-green on near-black) ───────────────────────┐
     │ 12:04:01  INFO  [hen] goldHEN v2.4b18.4 booting…                   │
@@ -82,20 +82,15 @@ def build_klog_tab(parent, app):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# Page head — green badge + title + connection status pill + stats strip
+# Page head — blue rule + title + connection status pill + stats strip
 # ─────────────────────────────────────────────────────────────────────────
 def _build_page_head(body, app):
     head = tk.Frame(body, bg=COLORS['bg_1'])
     head.pack(fill='x', pady=(0, 10))
 
-    # Green gradient-ish badge tile (▣ glyph, success-on-bg-darker)
-    badge = tk.Label(head, text='\u25a3',
-                     bg=COLORS['success'], fg='#001a05',
-                     font=(FONTS['body'][0], 16, 'bold'),
-                     width=2, height=1, padx=4, pady=0,
-                     highlightbackground='#00b32d',
-                     highlightthickness=1)
-    badge.pack(side='left', padx=(0, 12))
+    # Standard page language: a slim blue rule, no decorative badge tile.
+    rule = tk.Frame(head, bg=COLORS['accent'], width=3, height=44)
+    rule.pack(side='left', fill='y', padx=(0, 14))
 
     # Titles column (expands to push status pill + stats to the right)
     title_col = tk.Frame(head, bg=COLORS['bg_1'])
@@ -157,12 +152,12 @@ def _build_stats_strip(body, app):
         sc.pack(side='left', fill='both', expand=True, padx=(0, 8))
         return sc
 
-    app._klog_stat_total = _cell('\U0001f4dc', _('Total Lines'))
-    app._klog_stat_rate  = _cell('\u23f1',     _('Lines / sec'))
+    app._klog_stat_total = _cell('≣', _('Total Lines'))
+    app._klog_stat_rate  = _cell('◷',     _('Lines / sec'))
     app._klog_stat_warn  = _cell('\u26a0',     _('Warnings'), status='warn')
     app._klog_stat_err   = _cell('\u2715',     _('Errors'),   status='error')
 
-    conn = StatCard(strip, icon='\U0001f50c', value=_('OFFLINE'),
+    conn = StatCard(strip, icon='◉', value=_('OFFLINE'),
                     caption=_('Connection'))
     conn.pack(side='left', fill='both', expand=True)
     app._klog_stat_conn = conn
@@ -263,7 +258,7 @@ def _build_conn_bar(body, app):
                               state='disabled')
     app._klog_stop_btn.pack(side='left', padx=(6, 0))
 
-    app._klog_pause_btn = _btn(inner, '\u23f8  Pause',
+    app._klog_pause_btn = _btn(inner, '‖  Pause',
                                command=app._klog_toggle_pause, kind='warn',
                                state='disabled')
     app._klog_pause_btn.pack(side='left', padx=(6, 0))
@@ -282,10 +277,10 @@ def _build_toolbar(body, app):
     bar = tk.Frame(body, bg=COLORS['bg_1'])
     bar.pack(fill='x', pady=(0, 6))
 
-    _btn(bar, '\U0001f5d1  Clear',
+    _btn(bar, '✕  Clear',
          command=app._klog_clear, kind='ghost').pack(side='left')
 
-    _btn(bar, '\U0001f4be  Export log',
+    _btn(bar, '▣  Export log',
          command=app._klog_export, kind='ghost').pack(side='left',
                                                        padx=(6, 0))
 
@@ -321,7 +316,7 @@ def _build_filter_row(body, app):
     inner = tk.Frame(row, bg=COLORS['bg_2'])
     inner.pack(fill='x', padx=12, pady=6)
 
-    tk.Label(inner, text='\U0001f50d',
+    tk.Label(inner, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_2'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(0, 8))
@@ -405,8 +400,8 @@ def _btn(parent, text, command, kind='primary', state='normal'):
                     COLORS['success_hi'], COLORS['fg_0']),
         'danger':  (COLORS['danger'],  COLORS['fg_0'],
                     COLORS['danger_hi'], COLORS['fg_0']),
-        'warn':    (COLORS['warn'],    '#1a0e00',
-                    COLORS['warn_hi'], '#1a0e00'),
+        'warn':    (COLORS['warn'],    COLORS['bg_0'],
+                    COLORS['warn_hi'], COLORS['bg_0']),
         'ghost':   (COLORS['bg_3'],    COLORS['fg_2'],
                     COLORS['bg_4'],    COLORS['fg_1']),
     }

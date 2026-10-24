@@ -35,6 +35,8 @@ import threading
 import time
 from typing import Callable
 
+from ui.process_supervisor import file_size_probe, run_process
+
 _RUN_LOCK = threading.Lock()
 
 MAX_PROGRESS_HZ = 20          # max UI updates per second
@@ -194,11 +196,27 @@ def _mkpfs_worker_cmd(argv: list[str]) -> list[str] | None:
     return None
 
 
+def _guess_output_path(argv: list[str]) -> str | None:
+    """Best-effort output path for the supervisor's growth probe."""
+    for arg in reversed(argv):
+        if not isinstance(arg, str) or arg.startswith('-'):
+            continue
+        if arg.lower().endswith(('.ffpfsc', '.ffpfs', '.ffpkg', '.exfat')):
+            return arg
+    return None
+
+
 def _run_mkpfs_subprocess(argv: list[str], cap: '_LineCapture',
-                          log_cb) -> int | None:
+                          log_cb,
+                          cancel_event: threading.Event | None = None
+                          ) -> int | None:
     """Option B: run mkpfs as a child process and pump its stdout+stderr
     through `cap` (same parsing as in-process). Returns the exit code, or
     None if the process could not be started (so the caller can fall back).
+
+    Unlike the old read-until-pipe-EOF loop, this waits on process exit and
+    can kill the whole mkpfs worker/Pool tree on cancel or after a long
+    silence, so a wedged compression can never hold the queue for hours.
     """
     cmd = _mkpfs_worker_cmd(argv)
     if not cmd:
@@ -228,50 +246,48 @@ def _run_mkpfs_subprocess(argv: list[str], cap: '_LineCapture',
     # ASCII superset).
     env['PYTHONIOENCODING'] = 'utf-8:replace'
 
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,   # fold stderr (progress) into one stream
-            stdin=subprocess.DEVNULL,
-            bufsize=0,                  # unbuffered: \r progress arrives live
-            env=env,
-            creationflags=creationflags,
-            startupinfo=startupinfo,
-        )
-    except Exception as e:
+    out_path = _guess_output_path(argv)
+    probe = file_size_probe(out_path) if out_path else None
+
+    result = run_process(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        bufsize=0,                  # unbuffered: \r progress arrives live
+        env=env,
+        creationflags=creationflags,
+        startupinfo=startupinfo,
+        on_chunk=cap.write,
+        cancel_event=cancel_event,
+        idle_timeout=45 * 60,
+        warn_after=5 * 60,
+        on_warning=(lambda idle: log_cb(
+            '[mkpfs] no output or file growth for %d min — still '
+            'waiting. Press Stop to cancel.' % max(1, int(idle // 60))))
+        if log_cb else None,
+        probe=probe,
+        poll_interval=0.5,
+    )
+
+    if result.error:
         if log_cb:
             log_cb('mkpfs subprocess could not start (%s); '
-                   'falling back to in-process.' % e)
+                   'falling back to in-process.' % result.error)
         return None
-
-    # Stream raw bytes so carriage-return progress updates are not line-
-    # buffered away. Decode loosely and feed the capture char-chunk by chunk.
-    try:
-        assert proc.stdout is not None
-        while True:
-            chunk = proc.stdout.read(4096)
-            if not chunk:
-                break
-            try:
-                cap.write(chunk.decode('utf-8', errors='replace'))
-            except Exception:
-                pass
-    except Exception as e:
+    if result.cancelled:
         if log_cb:
-            log_cb('mkpfs subprocess read error: %s' % e)
-    finally:
-        try:
-            proc.stdout.close()  # type: ignore[union-attr]
-        except Exception:
-            pass
-        rc = proc.wait()
-    return rc
+            log_cb('mkpfs cancelled.')
+        return 130
+    if result.timed_out:
+        if log_cb:
+            log_cb('mkpfs stopped: %s' % result.summary())
+        return 124
+    return result.returncode
 
 
 def run_mkpfs(argv: list[str],
               log_cb:      Callable[[str], None] | None = None,
-              progress_cb: Callable[[str, int, int, str], None] | None = None
+              progress_cb: Callable[[str, int, int, str], None] | None = None,
+              cancel_event: threading.Event | None = None
               ) -> int:
     """Run mkpfs and return its exit code (0 = success).
 
@@ -289,14 +305,24 @@ def run_mkpfs(argv: list[str],
 
     cap = _LineCapture(line_cb=log_cb, cr_cb=None, progress_cb=progress_cb)
 
+    if cancel_event is not None and cancel_event.is_set():
+        if log_cb:
+            log_cb('mkpfs cancelled before start.')
+        return 130
+
     with _RUN_LOCK:
         # --- Primary path: separate process ---
-        rc = _run_mkpfs_subprocess(argv, cap, log_cb)
+        rc = _run_mkpfs_subprocess(argv, cap, log_cb,
+                                   cancel_event=cancel_event)
         if rc is not None:
             cap.flush()
             return rc
 
         # --- Fallback: in-process, single core (no Pool) ---
+        if cancel_event is not None and cancel_event.is_set():
+            if log_cb:
+                log_cb('mkpfs cancelled before in-process fallback.')
+            return 130
         if log_cb:
             log_cb('Running mkpfs in-process (single-core fallback).')
         fb_argv = list(argv)

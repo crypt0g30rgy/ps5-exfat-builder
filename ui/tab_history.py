@@ -6,15 +6,15 @@ Step 10 (v2.1.2): refactored against preview/history-tab-redesign.html.
 Layout:
 
     ┌─ page-head ─────────────────────────────────────────────────────┐
-    │  Build History  [since 2025-08-11]  [↻ Refresh][⤓CSV][🗑Clear]   │
+    │  Build History  [since 2025-08-11]  [↻ Refresh][⤓CSV][✕Clear]   │
     ├─ stats grid (4 cards) ──────────────────────────────────────────┤
     │ [Total: 142]  [Success: 94%]  [Failed: 9]  [Total built: 8.4 TB]│
     ├─ filters row ───────────────────────────────────────────────────┤
-    │ 🔍 Search…  [All][✓ Success][✗ Failed]    [Type ▼] [Range ▼]    │
+    │ ⌕ Search…  [All][✓ Success][✗ Failed]    [Type ▼] [Range ▼]    │
     ├─ table (sticky header) ─────────────────────────────────────────┤
     │ Game  | Type  | Output           | Size    | Dur  | When | Status│
     │ ────────────────────────────────────────────────────────────────│
-    │ Returnal  EXFAT  D:/...  56.8GB  04:12  12m  ●SUCCESS  📂↻✕    │
+    │ Returnal  EXFAT  D:/...  56.8GB  04:12  12m  ●SUCCESS  ▤↻✕    │
     │ ...                                                              │
     └─────────────────────────────────────────────────────────────────┘
 
@@ -84,7 +84,7 @@ def _build_page_head(body, app):
              ).pack(side='left', padx=(12, 0))
 
     # Right-aligned action buttons
-    _danger_btn(head, '\U0001f5d1  ' + _('Clear history'),
+    _danger_btn(head, '✕  ' + _('Clear history'),
                 command=app._history_clear).pack(side='right')
     _ghost_btn(head, '\u2913  ' + _('Export CSV'),
                command=lambda: _export_csv(app)
@@ -227,7 +227,7 @@ def _build_filters(body, app):
                            highlightthickness=1)
     search_wrap.pack(side='left', fill='x', expand=False)
 
-    tk.Label(search_wrap, text='\U0001f50d',
+    tk.Label(search_wrap, text='⌕',
              font=(FONTS['body'][0], 11),
              bg=COLORS['bg_0'], fg=COLORS['fg_4']
              ).pack(side='left', padx=(8, 4))

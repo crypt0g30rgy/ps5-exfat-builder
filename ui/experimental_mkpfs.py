@@ -28,7 +28,8 @@ uses stable mkpfs.
 
 import os
 import sys
-import subprocess
+
+from ui.process_supervisor import file_size_probe, run_process
 
 
 # Generic launcher names probed in the tool folder, in priority order.
@@ -173,27 +174,36 @@ def run_experimental_mkpfs(app, src_exfat, final_ffpfsc, *,
     except Exception:
         pre_size = -1
 
-    # Run it, streaming stdout/stderr (merged) to the log.
-    try:
-        env = dict(os.environ)
-        env.setdefault('PYTHONUNBUFFERED', '1')
-        proc = subprocess.Popen(
-            cmd, cwd=tool_dir,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            universal_newlines=True, bufsize=1, env=env)
-    except Exception as e:
+    # Run it, streaming stdout/stderr (merged) to the log.  run_process
+    # waits on process exit (not pipe EOF), applies an idle watchdog and
+    # kills the tool's process tree when the queue is stopped.
+    env = dict(os.environ)
+    env.setdefault('PYTHONUNBUFFERED', '1')
+    cancel_ev = getattr(app, '_build_cancel_event', None)
+    result = run_process(
+        cmd, cwd=tool_dir, env=env,
+        on_line=lambda line: log('[EXPERIMENTAL][mkpfs] ' + line + '\n'),
+        cancel_event=cancel_ev,
+        idle_timeout=45 * 60,
+        warn_after=5 * 60,
+        on_warning=lambda idle: log(
+            '[EXPERIMENTAL] No output or file growth for %d min \u2014 '
+            'still waiting.\n' % max(1, int(idle // 60))),
+        probe=file_size_probe(final_ffpfsc),
+        poll_interval=0.5,
+    )
+    if result.error:
         log('[EXPERIMENTAL] Failed to start external tool: %s \u2014 falling '
-            'back to stable mkpfs\n' % e)
+            'back to stable mkpfs\n' % result.error)
         return False
-
-    try:
-        for line in iter(proc.stdout.readline, ''):
-            if line:
-                log('[EXPERIMENTAL][mkpfs] ' + line.rstrip('\n') + '\n')
-        proc.stdout.close()
-    except Exception as e:
-        log('[EXPERIMENTAL] Error reading external tool output: %s\n' % e)
-    rc = proc.wait()
+    if result.cancelled:
+        log('[EXPERIMENTAL] External tool cancelled.\n')
+        return False
+    if result.timed_out:
+        log('[EXPERIMENTAL] External tool stopped: %s \u2014 falling back '
+            'to stable mkpfs\n' % result.summary())
+        return False
+    rc = result.returncode
     log('[EXPERIMENTAL]   Exit code: %s\n' % rc)
 
     if rc != 0:

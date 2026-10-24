@@ -247,21 +247,23 @@ class GameCard(tk.Frame):
         set_selected(bool): accent border + slightly brighter background.
     """
 
+    # Placeholder cover slabs use only neutral surfaces / the blue tint.
+    # Real cover art replaces these once loaded.
     _COVER_PALETTES = [
-        '#1a0d2a',  # deep purple
-        '#2a1a3d',  # mid purple
-        '#1d1729',  # near-bg purple
-        '#241540',  # bright purple
-        '#0e221f',  # teal-purple
-        '#240e14',  # rust-purple
+        COLORS['bg_3'],
+        COLORS['bg_4'],
+        COLORS['bg_2'],
+        COLORS['bg_5'],
+        COLORS['accent_08'],
+        COLORS['bg_3'],
     ]
 
     _BADGE_SCHEMES = {
-        'built':    (COLORS['success'],  '#001a05'),
+        'built':    (COLORS['success'],  COLORS['bg_0']),
         'backport': (COLORS['purple'],   COLORS['fg_0']),
-        'warn':     (COLORS['warn'],     '#1a0e00'),
+        'warn':     (COLORS['warn'],     COLORS['bg_0']),
         # pill schemes for the badges row
-        'success':  (COLORS['success'],  '#001a05'),
+        'success':  (COLORS['success'],  COLORS['bg_0']),
         'purple':   (COLORS['purple'],   COLORS['fg_0']),
         'accent':   (COLORS['accent'],   COLORS['fg_0']),
     }
@@ -304,7 +306,7 @@ class GameCard(tk.Frame):
         cover.pack_propagate(False)
 
         self.cover_label = tk.Label(cover,
-                                    text='\U0001f3ae',
+                                    text='\u25c9',
                                     font=(FONTS['body'][0],
                                           max(28, cover_h // 5)),
                                     bg=cover_bg, fg=COLORS['fg_6'])
@@ -389,11 +391,11 @@ class GameCard(tk.Frame):
                      fg=COLORS['fg_3'], anchor='w').pack(side='left')
 
         if size_text:
-            _meta_row('\u2b07', size_text)
+            _meta_row('↓', size_text)
         if date_text:
-            _meta_row('\U0001f4c5', date_text)
+            _meta_row('\u25f7', date_text)
         if folder_text:
-            _meta_row('\U0001f4c1', folder_text)
+            _meta_row('\u25a4', folder_text)
 
         # ── Bottom: status badges + ⋮ overflow ──
         brow = tk.Frame(info, bg=bg)
@@ -500,7 +502,7 @@ class GameCard(tk.Frame):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# FolderChip — the library tab's "📁 D:\PS5\Dumps  28 games  ✕" pill.
+# FolderChip — the library tab's "▤ D:\PS5\Dumps  28 games  ✕" pill.
 # ─────────────────────────────────────────────────────────────────────────
 class FolderChip(tk.Frame):
     """A folder chip: dim background, monospace path, optional close button.
@@ -522,7 +524,7 @@ class FolderChip(tk.Frame):
         inner.pack(padx=10, pady=5)
 
         # Folder glyph + path (monospace)
-        tk.Label(inner, text='\U0001f4c1',
+        tk.Label(inner, text='▤',
                  font=(FONTS['body'][0], 10),
                  bg=bg, fg=COLORS['fg_3']
                  ).pack(side='left', padx=(0, 6))
@@ -544,7 +546,7 @@ class FolderChip(tk.Frame):
             # button being functionally present. Now: 13pt bold ✕ with
             # an always-visible dim pill background so it reads as a
             # button at rest, not just a glyph. Hover turns it red.
-            x_bg = COLORS.get('bg_3', '#2a2733')
+            x_bg = COLORS.get('bg_3', '#20242C')
             x_lbl = tk.Label(inner, text='\u2715',
                              font=(FONTS['body'][0], 13, 'bold'),
                              bg=x_bg, fg=COLORS['fg_1'],
@@ -554,7 +556,7 @@ class FolderChip(tk.Frame):
             x_lbl.pack(side='left', padx=(12, 0))
             x_lbl.bind('<Button-1>', lambda e: on_remove())
             x_lbl.bind('<Enter>',
-                       lambda e: x_lbl.configure(fg='#ffffff',
+                       lambda e: x_lbl.configure(fg=COLORS['fg_0'],
                                                   bg=COLORS['danger']))
             x_lbl.bind('<Leave>',
                        lambda e: x_lbl.configure(fg=COLORS['fg_1'],
@@ -616,7 +618,7 @@ class DetectedGameStrip(tk.Frame):
         # 48px square. Real cover art is set via .config(image=..., text='').
         self.cover_label = tk.Label(inner, bg=COLORS['bg_5'],
                                     fg=accent,
-                                    text='\U0001f3ae',
+                                    text='\u25c9',
                                     font=(FONTS['body'][0], 18),
                                     width=4, height=2,
                                     relief='flat', bd=0,
@@ -797,14 +799,14 @@ def build_subtabs(parent, items, default=None):
     on a slightly elevated background; idle is muted text on the
     sub-tab strip background.
     """
-    sub_bg       = COLORS.get('bg_2', '#1a1426')
-    sub_active   = COLORS.get('bg_3', '#251e34')
-    sub_idle_fg  = COLORS.get('fg_3', '#7a7388')
-    sub_hover_fg = COLORS.get('fg_1', '#e0dcec')
-    accent_fg    = COLORS.get('accent', '#b07ad6')
-    border       = COLORS.get('border_4', '#2c2438')
+    sub_bg       = COLORS.get('bg_2', '#171A21')
+    sub_active   = COLORS.get('bg_3', '#20242C')
+    sub_idle_fg  = COLORS.get('fg_3', '#A7AFBA')
+    sub_hover_fg = COLORS.get('fg_1', '#F5F7FA')
+    accent_fg    = COLORS.get('accent', '#0070D1')
+    border       = COLORS.get('border_4', '#3A414D')
     body_font    = FONTS.get('body', ('Segoe UI', 10))
-    bg           = COLORS.get('bg_1', '#0a0812')
+    bg           = COLORS.get('bg_1', '#101216')
 
     # Sub-tab bar at the top of `parent`
     subbar = tk.Frame(parent, bg=sub_bg)
