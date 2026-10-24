@@ -73,7 +73,7 @@ def _silent_startupinfo():
     except Exception:
         return None
 
-APP_VERSION = '3.6.4'
+APP_VERSION = '4.0.100'
 KOFI_URL = 'https://ko-fi.com/deckerr9746220'
 
 # Bundled tutorial HTML — fallback when offline
