@@ -98,8 +98,8 @@ python -m unittest discover -s tests -v
 
 The suite is pure Python (no Tk window is created) and covers naming,
 embedded payloads, process supervision, hardware detection, responsive
-scaling, robocopy summary parsing, queue size overrides, and windowed
-stdio hardening. The two process-tree tests that spawn `/bin/sh` are
+scaling, robocopy summary parsing, queue size overrides, windowed stdio
+hardening, and tag-derived version resolution. The two process-tree tests that spawn `/bin/sh` are
 skipped on Windows; the Windows `taskkill /T /F` path is covered by the
 manual validation matrix.
 
@@ -130,7 +130,7 @@ pinned `mkpfs==0.0.8`), embeds `controller.ico`, and builds the full
 application. If `exfat_builder_lite.py` exists it also builds the Lite
 variant; this repository ships only the full build.
 
-Output: `dist\exFAT Image Builder.exe`
+Output: `dist\exFAT_Image_Builder.exe`
 
 ### Option B — explicit PyInstaller command
 
@@ -139,7 +139,7 @@ the GitHub Actions workflow runs:
 
 ```powershell
 python -m PyInstaller --onefile --windowed --clean --noconfirm `
-  --name "exFAT Image Builder" `
+  --name "exFAT_Image_Builder" `
   --icon "controller.ico" `
   --hidden-import PIL._tkinter_finder `
   --hidden-import psutil `
@@ -198,15 +198,15 @@ The in-app updater verifies a `.sha256` asset when one is present. Create
 it next to the exe:
 
 ```powershell
-$h = (Get-FileHash -Algorithm SHA256 'dist\exFAT Image Builder.exe').Hash.ToLower()
-"$h  exFAT Image Builder.exe" | Out-File -Encoding ASCII 'dist\exFAT Image Builder.exe.sha256'
-Get-Content 'dist\exFAT Image Builder.exe.sha256'
+$h = (Get-FileHash -Algorithm SHA256 'dist\exFAT_Image_Builder.exe').Hash.ToLower()
+"$h  exFAT_Image_Builder.exe" | Out-File -Encoding ASCII 'dist\exFAT_Image_Builder.exe.sha256'
+Get-Content 'dist\exFAT_Image_Builder.exe.sha256'
 ```
 
 Keep this exact naming convention:
 
-- `exFAT Image Builder.exe`
-- `exFAT Image Builder.exe.sha256`
+- `exFAT_Image_Builder.exe`
+- `exFAT_Image_Builder.exe.sha256`
 
 The updater selects a release asset ending in `.exe` that does not contain
 `Lite`, plus a `.sha256` asset that does not contain `Lite`. A renamed
@@ -216,14 +216,14 @@ asset will not be picked up.
 
 ## 8. Verify the build
 
-- Launch `dist\exFAT Image Builder.exe` and check the version shown in the
+- Launch `dist\exFAT_Image_Builder.exe` and check the version shown in the
   title bar / About tab.
 - Confirm the exe is a realistic size. The app rejects updater downloads
   under 5 MB, so a release exe should be comfortably larger.
 - Compare the file hash with the generated checksum:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 'dist\exFAT Image Builder.exe'
+Get-FileHash -Algorithm SHA256 'dist\exFAT_Image_Builder.exe'
 ```
 
 - For a true release check, copy the exe to a clean Windows VM without
@@ -241,7 +241,7 @@ Workflow: `.github/workflows/build-release.yml`.
 | Event | What happens |
 | --- | --- |
 | Push to `main` | Installs dependencies, runs tests, builds the exe, and uploads an artifact. No release. |
-| Push a tag matching `v*` | Builds, verifies the tag matches `APP_VERSION`, then publishes a GitHub Release with the exe and checksum. |
+| Push a tag matching `v*` | Validates the tag, refuses to overwrite an existing release, builds with the tag version embedded, and publishes a GitHub Release with the exe and checksum. |
 | Manual `workflow_dispatch` | Builds and uploads the artifact only. |
 
 Pull requests do **not** trigger the workflow, so they cannot consume a
@@ -250,35 +250,59 @@ Windows build runner. Run the test suite locally before merging.
 The build job runs on `windows-latest` with Python 3.11 x64. Artifacts are
 named `exfat-image-builder-windows-x64` and kept for 30 days.
 
+### Versioning
+
+Tags are the source of truth. Publishing a release does **not** require
+editing `APP_VERSION` in `exfat_builder.py`. On a `v*` tag push the
+workflow writes the tag's version into `_build_version.py`, PyInstaller
+bundles that file, and the UI and update checker use it. The
+`APP_VERSION` constant is only the fallback for runs from source.
+
+Tag names must be `vMAJOR.MINOR.PATCH`, optionally with a suffix such as
+`v4.1.0-rc1`.
+
+Release versions are immutable: if a GitHub Release already exists for a
+tag, the workflow fails instead of overwriting its assets. Bump the
+version and push a new tag. To stop a tag itself from being moved or
+deleted, add a tag ruleset under **Settings → Rules → Rulesets**.
+
+To give a local build a tag-derived version, generate the same file
+before running `build.bat`:
+
+```powershell
+$tag = git describe --tags --match "v*" --abbrev=0
+"BUILD_VERSION = '$($tag -replace '^v', '')'" |
+  Set-Content -LiteralPath _build_version.py -Encoding ASCII
+```
+
+Without that file, a local build reports the `APP_VERSION` fallback.
+`_build_version.py` is committed with `BUILD_VERSION = None`; do not commit
+a generated value, since the pushed tag must remain the source of truth.
+
 ### Publishing a release
 
-1. Update the version in `exfat_builder.py`:
+1. Make sure the release commit is pushed to `main`.
 
-   ```python
-   APP_VERSION = '3.6.5'
-   ```
+2. Optionally update the changelog and commit it.
 
-2. Optionally update the changelog and commit both changes.
-
-3. Create and push an annotated tag:
+3. Create and push an annotated tag (no Python edit needed):
 
    ```powershell
-   git tag -a v3.6.5 -m "exFAT Image Builder v3.6.5"
-   git push origin v3.6.5
+   git tag -a v4.1.0 -m "exFAT Image Builder v4.1.0"
+   git push origin v4.1.0
    ```
 
-4. The workflow runs automatically. The tag **must** match
-   `APP_VERSION` prefixed with `v`; otherwise the build fails before
-   packaging and no release is created.
+4. The workflow derives `4.1.0` from the tag, embeds it in the exe, and
+   publishes the release automatically.
 
 5. On success, the release contains:
 
-   - `exFAT Image Builder.exe`
-   - `exFAT Image Builder.exe.sha256`
+   - `exFAT_Image_Builder.exe`
+   - `exFAT_Image_Builder.exe.sha256`
 
-   Release notes are generated from the commit history. If a release for
-   that tag already exists, the workflow re-uploads both assets with
-   `--clobber` instead of failing.
+   Release notes are generated from the commit history. An existing
+   release is never modified: if one already exists for the tag, the
+   workflow fails before building. Use a new tag instead.
 
 No repository secrets are required: the workflow uses the built-in
 `GITHUB_TOKEN` and requests `contents: write` only in the release job.

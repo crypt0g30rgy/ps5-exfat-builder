@@ -26,9 +26,9 @@ if not exist "ui\" (
     exit /b 1
 )
 
-echo Building exFAT Image Builder.exe (Full version)...
+echo Building exFAT_Image_Builder.exe (Full version)...
 py -3.11 -m PyInstaller --onefile --windowed --clean --noconfirm ^
-    --name "exFAT Image Builder" ^
+    --name "exFAT_Image_Builder" ^
     %ICON_ARG% ^
     --hidden-import PIL._tkinter_finder ^
     --hidden-import psutil ^
@@ -63,9 +63,9 @@ if errorlevel 1 (
 echo.
 
 if exist "exfat_builder_lite.py" (
-    echo Building exFAT Image Builder Lite.exe...
+    echo Building exFAT_Image_Builder_Lite.exe...
     py -3.11 -m PyInstaller --onefile --windowed --clean --noconfirm ^
-        --name "exFAT Image Builder Lite" ^
+        --name "exFAT_Image_Builder_Lite" ^
         %ICON_ARG% ^
         --hidden-import PIL._tkinter_finder ^
     --hidden-import psutil ^
@@ -85,6 +85,6 @@ echo Done! Exes are in the dist\ folder.
 echo.
 echo Reminder: generate the SHA256 for the auto-updater:
 echo   cd dist
-echo   powershell -Command "$h=(Get-FileHash -Algorithm SHA256 'exFAT Image Builder.exe').Hash.ToLower(); \"$h  exFAT Image Builder.exe\" ^| Out-File -Encoding ASCII 'exFAT Image Builder.exe.sha256'"
+echo   powershell -Command "$h=(Get-FileHash -Algorithm SHA256 'exFAT_Image_Builder.exe').Hash.ToLower(); \"$h  exFAT_Image_Builder.exe\" ^| Out-File -Encoding ASCII 'exFAT_Image_Builder.exe.sha256'"
 echo.
 pause

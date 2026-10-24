@@ -26,6 +26,7 @@ from ui.process_supervisor import (
 from robocopy_summary import RobocopySummaryParser
 from size_override import parse_size_override
 from stdio_guard import ensure_std_streams
+from app_version import resolve_version
 
 # ── tkinterdnd2 — optional, enables drag & drop of folders ──
 try:
@@ -73,7 +74,15 @@ def _silent_startupinfo():
     except Exception:
         return None
 
-APP_VERSION = '4.0.100'
+# Release builds take their version from the pushed git tag: CI rewrites
+# _build_version.py before PyInstaller runs.  This constant is only the
+# fallback for source runs, so publishing a release never requires editing
+# this file.  See BUILD.md.
+try:
+    from _build_version import BUILD_VERSION as _BUILD_VERSION
+except Exception:
+    _BUILD_VERSION = None
+APP_VERSION = resolve_version('4.0.100', _BUILD_VERSION)
 KOFI_URL = 'https://ko-fi.com/deckerr9746220'
 
 # Bundled tutorial HTML — fallback when offline

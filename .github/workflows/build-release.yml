@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python 3.11 (x64)
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           architecture: 'x64'
@@ -33,25 +33,54 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pyinstaller pillow tkinterdnd2 psutil "mkpfs==0.0.8" cryptography
 
-      - name: Verify tag matches APP_VERSION
+      - name: Validate release tag
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          $match = Select-String -Path exfat_builder.py -Pattern "^APP_VERSION = '([^']+)'" | Select-Object -First 1
-          if (-not $match) {
-            throw "Could not find APP_VERSION in exfat_builder.py"
+          if ($env:TAG_NAME -notmatch '^v\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$') {
+            throw "Tag $env:TAG_NAME is not a valid release tag. Use vMAJOR.MINOR.PATCH."
           }
-          $version = $match.Matches[0].Groups[1].Value
-          if ("v$version" -ne $env:TAG_NAME) {
-            throw "Tag $env:TAG_NAME does not match APP_VERSION v$version. Bump APP_VERSION before tagging."
+          Write-Host "Release version $($env:TAG_NAME.Substring(1)) comes from tag $env:TAG_NAME"
+
+      - name: Refuse to overwrite an existing release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          # A missing release is the expected case, so clear the native
+          # command's nonzero exit code before the step finishes.
+          $releaseExists = $false
+          gh release view $env:TAG_NAME 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { $releaseExists = $true }
+          $LASTEXITCODE = 0
+          if ($releaseExists) {
+            throw "Release $env:TAG_NAME already exists. Versions are immutable; create a new tag instead."
           }
-          Write-Host "Tag $env:TAG_NAME matches APP_VERSION v$version"
+          Write-Host "No existing release for $env:TAG_NAME"
 
       - name: Run unit tests
         shell: pwsh
         run: python -m unittest discover -s tests -v
+
+      - name: Embed version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $version = $env:TAG_NAME.Substring(1)
+          "BUILD_VERSION = '$version'" |
+            Set-Content -LiteralPath '_build_version.py' -Encoding ASCII
+          python -c "import _build_version; from app_version import resolve_version; assert _build_version.BUILD_VERSION == '$version'; assert resolve_version('0', _build_version.BUILD_VERSION) == '$version'"
+          if ($LASTEXITCODE -ne 0) {
+            throw "The tag-derived version did not validate."
+          }
+          Get-Content -LiteralPath '_build_version.py'
 
       - name: Build with PyInstaller
         shell: pwsh
@@ -61,7 +90,7 @@ jobs:
             '--windowed',
             '--clean',
             '--noconfirm',
-            '--name', 'exFAT Image Builder',
+            '--name', 'exFAT_Image_Builder',
             '--icon', 'controller.ico',
             '--hidden-import', 'PIL._tkinter_finder',
             '--hidden-import', 'psutil',
@@ -93,7 +122,7 @@ jobs:
       - name: Create SHA256 checksum
         shell: pwsh
         run: |
-          $exe = Join-Path $PWD 'dist/exFAT Image Builder.exe'
+          $exe = Join-Path $PWD 'dist/exFAT_Image_Builder.exe'
           if (-not (Test-Path -LiteralPath $exe)) {
             throw "Expected build output was not created: $exe"
           }
@@ -102,17 +131,17 @@ jobs:
             throw "Built exe is only $size bytes; expected a onefile PyInstaller build of at least 5 MB."
           }
           $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  exFAT Image Builder.exe" |
-            Out-File -Encoding ASCII 'dist/exFAT Image Builder.exe.sha256'
+          "$hash  exFAT_Image_Builder.exe" |
+            Out-File -Encoding ASCII 'dist/exFAT_Image_Builder.exe.sha256'
           Write-Host ("Built {0:N0} bytes, SHA256 {1}" -f $size, $hash)
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: exfat-image-builder-windows-x64
           path: |
-            dist/exFAT Image Builder.exe
-            dist/exFAT Image Builder.exe.sha256
+            dist/exFAT_Image_Builder.exe
+            dist/exFAT_Image_Builder.exe.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -127,7 +156,7 @@ jobs:
 
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: exfat-image-builder-windows-x64
           path: dist
@@ -140,16 +169,15 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          EXE="dist/exFAT Image Builder.exe"
-          SHA="dist/exFAT Image Builder.exe.sha256"
+          EXE="dist/exFAT_Image_Builder.exe"
+          SHA="dist/exFAT_Image_Builder.exe.sha256"
           ls -l "$EXE" "$SHA"
 
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Release $TAG_NAME already exists; updating assets."
-            gh release upload "$TAG_NAME" "$EXE" "$SHA" --clobber
-          else
-            echo "Creating release $TAG_NAME."
-            gh release create "$TAG_NAME" "$EXE" "$SHA" \
-              --title "exFAT Image Builder $TAG_NAME" \
-              --generate-notes
+            echo "::error::Release $TAG_NAME already exists. Versions are immutable; create a new tag instead."
+            exit 1
           fi
+          echo "Creating release $TAG_NAME."
+          gh release create "$TAG_NAME" "$EXE" "$SHA" \
+            --title "exFAT Image Builder $TAG_NAME" \
+            --generate-notes
